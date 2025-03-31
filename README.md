@@ -123,4 +123,6 @@ interface DatabaseAccessProvider {
 
 ## 🚀 Summary
 
-This project addresses a real-world need in secure environments: giving developers safe access to production data only when necessary. Through a mix of automation, access control, and audit logging, we ensure a balance between agility and compliance.
+This project is being developed as part of a postgraduate engineering program in Cybersecurity Engineering (2024/2025) at Warsaw University of Technology.
+
+Its goal is to demonstrate a practical and secure solution to a common real-world problem: enabling temporary and auditable access to production databases in emergency or debugging scenarios. The solution emphasizes automation, granular permissions, time-bound access, and audit logging — all aligned with modern cybersecurity best practices.
