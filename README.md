@@ -18,7 +18,7 @@ The core idea: let developers request short-lived database access through a secu
 
 ### 🔹 Phase 1: Project Setup
 
-- [ ] Initialize Spring Boot + Gradle project
+- [✅] Initialize Spring Boot + Gradle project
 - [ ] Add basic Spock test support
 - [ ] Set up Docker Compose (PostgreSQL + MongoDB)
 - [ ] Add GitHub Actions CI (build + test)

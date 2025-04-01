@@ -1,0 +1,56 @@
+plugins {
+	id 'java'
+	id 'groovy'
+	id 'org.springframework.boot' version '3.2.0'
+	id 'io.spring.dependency-management' version '1.1.4'
+}
+
+apply from: "$rootDir/dbaccess/integrationTest.gradle"
+
+group = 'pl.pw.cyber'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+project.ext.versions = [
+		groovy: '4.0.15',
+		spock : '2.4-M5-groovy-4.0',
+		springBoot : '3.2.0',
+		postgres: '42.7.1'
+]
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.postgresql:postgresql'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework:spring-jdbc'
+
+	testImplementation "org.apache.groovy:groovy:${versions.groovy}"
+	testImplementation "org.spockframework:spock-core:${versions.spock}"
+	testImplementation "org.spockframework:spock-spring:${versions.spock}"
+
+	integrationTestImplementation "org.apache.groovy:groovy:${versions.groovy}"
+	integrationTestImplementation "org.spockframework:spock-core:${versions.spock}"
+	integrationTestImplementation "org.spockframework:spock-spring:${versions.spock}"
+	integrationTestImplementation "org.springframework.boot:spring-boot-starter-test"
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+		showStandardStreams = true
+	}
+}
+
+// https://github.com/gradle/gradle/issues/14889
+tasks.register("prepareKotlinBuildScriptModel") {}

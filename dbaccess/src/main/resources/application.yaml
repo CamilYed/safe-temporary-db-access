@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: "safe-temporary-db-access"
+  flyway:
+    baseline-on-migrate: true
+  datasource:
+    url: jdbc:postgresql://localhost:${POSTGRES_PORT}/test
+    username: test
+    password: test
+    driver-class-name: org.postgresql.Driver
