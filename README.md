@@ -14,19 +14,6 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
-## 🧪 Test-Driven Development Workflow
-
-All functionality in this project is developed using **TDD**. We follow this cycle:
-
-1. Write a failing test (Spock Specification)
-2. Implement the simplest code to make it pass
-3. Refactor if needed
-
-We aim for expressive and business-readable tests, following patterns like those described by Allegro:  
-📖 [Readable Tests by Example](https://blog.allegro.tech/2022/02/readable-tests-by-example.html)
-
----
-
 ## ✅ TODO (TDD-first)
 
 ### 🔹 Phase 1: Project Setup
