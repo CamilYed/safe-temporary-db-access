@@ -23,7 +23,6 @@ The core idea: let developers request short-lived database access through a secu
 - [✅] Write integration test that loads Spring context and asserts it is not null
 - [✅] Configure minimal CI (GitHub Actions)
 
-
 ### 🔹 Phase 2: Core Access Request Flow
 
 1. [ ] **Test**: requesting access creates a user in PostgreSQL with correct permissions
@@ -63,28 +62,51 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
-## 🔐 PostgreSQL Permission Model – Summary
+## 🔐 PostgreSQL Permission Model – Explained
 
-PostgreSQL uses **roles** (users or groups) and **privileges** that can be assigned to them:
+PostgreSQL uses **Role-Based Access Control (RBAC)** with granular privileges at various levels (database, schema, table, function).  
+Full list in [PostgreSQL docs](https://www.postgresql.org/docs/current/ddl-priv.html)
 
-### Common privileges:
+### ❗ Why only a subset of permissions?
 
-| Privilege | Level     | Purpose                             |
-|----------|------------|-------------------------------------|
-| CONNECT  | Database   | Allow connection                    |
-| USAGE    | Schema     | Allow access to schema and objects  |
-| SELECT   | Table      | Read data                           |
-| INSERT   | Table      | Add data                            |
-| UPDATE   | Table      | Modify data                         |
-| EXECUTE  | Function   | Call stored procedures              |
+This system is designed for **safe and temporary developer access**.  
+Granting the full range of PostgreSQL privileges (like `TRUNCATE`, `ALTER`, `DROP`, `EXECUTE`) would risk:
 
-#### Example: Creating a read-only user
+- accidental data loss or corruption,
+- bypassing audit/approval flows,
+- security violations.
+
+We intentionally support a **narrow, safe subset of permissions**, mapped to abstract roles in the app.
+
+---
+
+### ✅ Supported Permission Levels
+
+```java
+enum PermissionLevel {
+    READ_ONLY,
+    READ_WRITE,
+    DELETE
+}
+```
+
+| Permission Level | SQL Grants                                        | Notes                        |
+|------------------|---------------------------------------------------|------------------------------|
+| READ_ONLY        | CONNECT, USAGE, SELECT                            | For read-only diagnostics    |
+| READ_WRITE       | CONNECT, USAGE, SELECT, INSERT, UPDATE            | For temporary fix/debugging  |
+| DELETE           | + DELETE (in addition to READ_WRITE)              | Requires separate approval   |
+
+> ✅ These correspond to real PostgreSQL privileges granted to a temporary user.
+
+---
+
+### 🧪 Example: Creating a Read-Only PostgreSQL Role
+
 ```sql
-CREATE ROLE readonly_user WITH LOGIN PASSWORD 'securepwd';
-GRANT CONNECT ON DATABASE mydb TO readonly_user;
-GRANT USAGE ON SCHEMA public TO readonly_user;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_user;
+CREATE ROLE temp_read_user WITH LOGIN PASSWORD 'securepwd';
+GRANT CONNECT ON DATABASE mydb TO temp_read_user;
+GRANT USAGE ON SCHEMA public TO temp_read_user;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO temp_read_user;
 ```
 
 ---
@@ -93,7 +115,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_use
 
 To support other databases (e.g., Oracle, MySQL):
 
-1. Define abstract permission levels in the app: `READ_ONLY`, `WRITE`, `ADMIN`, etc.
+1. Define abstract permission levels in the app: `READ_ONLY`, `READ_WRITE`, `DELETE`, `ADMIN`, etc.
 2. Implement `DatabaseAccessProvider` interface:
 ```java
 interface DatabaseAccessProvider {
@@ -101,11 +123,11 @@ interface DatabaseAccessProvider {
     void revokeUser(String username);
 }
 ```
-3. Add separate implementations:
+3. Add implementations per engine:
    - `PostgresAccessProvider`
    - `OracleAccessProvider`
-   - ...
-4. Core logic should **only talk to the interface**, not the database-specific details.
+   - `MySQLAccessProvider`
+4. Core logic must remain **DB-agnostic** and depend only on the interface.
 
 ---
 
