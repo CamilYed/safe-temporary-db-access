@@ -21,7 +21,7 @@ The core idea: let developers request short-lived database access through a secu
 - [✅] Initialize Spring Boot + Gradle project
 - [✅] Add Spock testing support
 - [✅] Write integration test that loads Spring context and asserts it is not null
-- [ ] Configure minimal CI (GitHub Actions)
+- [✅] Configure minimal CI (GitHub Actions)
 
 
 ### 🔹 Phase 2: Core Access Request Flow
