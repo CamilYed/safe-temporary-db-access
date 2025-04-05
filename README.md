@@ -23,16 +23,56 @@ The core idea: let developers request short-lived database access through a secu
 - [✅] Write integration test that loads Spring context and asserts it is not null
 - [✅] Configure minimal CI (GitHub Actions)
 
-### 🔹 Phase 2: Core Access Request Flow
+### ✅ Phase 2 – Integration Test Strategy Checklist
 
-1. [ ] **Test**: requesting access creates a user in PostgreSQL with correct permissions
-2. [ ] **Code**: implement `/access-request` endpoint
-3. [ ] **Test**: credentials are returned once and not persisted
-4. [ ] **Code**: temporary credentials generation logic
-5. [ ] **Test**: TTL expiration removes user from database
-6. [ ] **Code**: scheduled task for user cleanup
-7. [ ] **Test**: all access actions are logged in MongoDB
-8. [ ] **Code**: implement Mongo audit logging
+## 🔹 Phase 0: Security & Authorization (Start Here)
+
+- [ ] **Test**: only authorized users can request access (JWT + allowlist)
+- [ ] **Code**: implement Spring Security + JWT parser
+- [ ] **Test**: Missing JWT → 401 Unauthorized
+- [ ] **Test**: Expired or invalid JWT → 401 / 403
+- [ ] **Test**: JWT without `sub` → 400 or 403
+- [ ] **Test**: User not in allowlist → 403
+- [ ] **Test**: User in allowlist → 200 OK
+- [ ] **Test**: Attempt to request forbidden level `ADMIN` → 403 / 400
+- [ ] **Code**: JWT parsing & token validator
+- [ ] **Code**: AuthorizedUsersRepository reading from YAML/JSON
+- [ ] **Code**: Simulate access approval flow (optional)
+
+
+## 🔹 1. Functional Core Scenarios (Happy Path)
+
+- [ ] 1 – Valid request creates user with `READ_ONLY` permissions
+- [ ] 2 – User with `READ_WRITE` gets INSERT, UPDATE rights
+- [ ] 3 – User with `DELETE` gets DELETE right
+- [ ] 4 – TTL expiration removes user from DB
+- [ ] 5 – Response includes username/password only once
+
+---
+
+## 🔹 2. Edge Cases & Input Validation
+
+- [ ] 6 – Invalid `permissionLevel` returns 400
+- [ ] 7 – `durationMinutes` above max TTL (e.g., 240) → 400
+- [ ] 8 – `durationMinutes` <= 0 → 400
+- [ ] 9 – Empty/null `targetDatabase` → 400
+- [ ] 10 – Concurrent access requests → no conflicts
+---
+
+## 🔍 3. PostgreSQL – Role & Permissions Verification
+
+- [ ] 16 – User exists in `pg_roles`
+- [ ] 17 – Only granted allowed privileges (e.g. no DROP)
+- [ ] 18 – User is removed after TTL
+- [ ] 19 – `READ_ONLY` user cannot perform DELETE
+
+---
+
+## 📦 5. MongoDB – Audit Logging
+
+- [ ] 20 – Audit entry saved with requestor, username, and TTL
+- [ ] 21 – Audit entry includes permission level
+- [ ] 22 – Audit entry does not store the password
 
 ### 🔹 Phase 3: Security & Authorization
 
@@ -78,6 +118,7 @@ Granting the full range of PostgreSQL privileges (like `TRUNCATE`, `ALTER`, `DRO
 
 We intentionally support a **narrow, safe subset of permissions**, mapped to abstract roles in the app.
 
+ * Supported PostgreSQL versions: 12.x – 16.x
 ---
 
 ### ✅ Supported Permission Levels
