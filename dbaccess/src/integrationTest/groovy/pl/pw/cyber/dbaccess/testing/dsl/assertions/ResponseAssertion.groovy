@@ -15,7 +15,7 @@ class ResponseAssertion {
     }
 
     ResponseAssertion hasStatusCode(int expectedStatusCode) {
-        assert response.statusCode.value() == expectedStatusCode : "Expected status code ${expectedStatusCode} but was ${response.statusCode.value()}"
+        assert response.statusCode.value() == expectedStatusCode: "Expected status code ${expectedStatusCode} but was ${response.statusCode.value()}"
         return this
     }
 }

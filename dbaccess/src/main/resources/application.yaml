@@ -1,10 +1,17 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: "safe-temporary-db-access"
   flyway:
     baseline-on-migrate: true
   datasource:
     url: jdbc:postgresql://localhost:${POSTGRES_PORT}/test
-    username: test
-    password: test
+    username: ${DB_USER_NAME}:test
+    password: ${DB_PASSWORD}:db_password
     driver-class-name: org.postgresql.Driver
+
+jwt:
+  public-key: ${PUBLIC_KEY_LOCATION}:""
+  private-key: ${PRIVATE_KEY_LOCATION}:""
+  ttl: 5m

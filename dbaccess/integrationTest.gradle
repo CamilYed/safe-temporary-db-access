@@ -1,7 +1,7 @@
 sourceSets {
     integrationTest {
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
     }
 }
 
@@ -10,7 +10,7 @@ if (project.plugins.findPlugin('idea')) {
         module {
             testSourceDirs += sourceSets.integrationTest.java.srcDirs
             testResourceDirs += sourceSets.integrationTest.resources.srcDirs
-            scopes.TEST.plus += [ configurations.integrationTestCompile ]
+            scopes.TEST.plus += [configurations.integrationTestCompile]
         }
     }
 }

@@ -9,7 +9,7 @@ class AccessRequestEndpointIT extends BaseIT implements AccessRequestAbility {
 
     def "should get 200"() {
         when:
-           def response = accessRequest()
+            def response = accessRequest()
 
         then:
             assertThat(response).hasStatusCode(200)
