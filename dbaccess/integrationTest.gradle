@@ -10,7 +10,7 @@ if (project.plugins.findPlugin('idea')) {
         module {
             testSourceDirs += sourceSets.integrationTest.java.srcDirs
             testResourceDirs += sourceSets.integrationTest.resources.srcDirs
-            scopes.TEST.plus += [ configurations.integrationTestCompile ]
+            scopes.TEST.plus += [configurations.integrationTestCompile]
         }
     }
 }
