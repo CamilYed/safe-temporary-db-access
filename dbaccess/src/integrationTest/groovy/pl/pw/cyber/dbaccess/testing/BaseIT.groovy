@@ -12,6 +12,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import pl.pw.cyber.dbaccess.SafeTemporaryDbAccessApplication
+import pl.pw.cyber.dbaccess.infrastructure.spring.security.JwtTokenTestConfig
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MakeRequestAbility
 import spock.lang.Specification
 
@@ -20,8 +21,9 @@ import static org.springframework.http.HttpHeaders.ACCEPT
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE
 
 @SpringBootTest(
+        useMainMethod = SpringBootTest.UseMainMethod.ALWAYS,
         webEnvironment = RANDOM_PORT,
-        classes = SafeTemporaryDbAccessApplication
+        classes = [SafeTemporaryDbAccessApplication, JwtTokenTestConfig]
 )
 @ActiveProfiles("test")
 abstract class BaseIT extends Specification implements MakeRequestAbility {
@@ -49,7 +51,7 @@ abstract class BaseIT extends Specification implements MakeRequestAbility {
         !contentType ?: httpHeaders.add(CONTENT_TYPE, contentType)
         !accept ?: httpHeaders.add(ACCEPT, accept)
         (headers ?: [:]).forEach { key, value ->
-            httpHeaders.add(key, value)
+            httpHeaders.add(key as String, value as String)
         }
         return httpHeaders
     }
