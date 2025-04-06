@@ -12,6 +12,6 @@ spring:
     driver-class-name: org.postgresql.Driver
 
 jwt:
-  public-key: ${PUBLIC_KEY_LOCATION}
-  private-key: ${PRIVATE_KEY_LOCATION}
+  public-key: ${PUBLIC_KEY_LOCATION}:""
+  private-key: ${PRIVATE_KEY_LOCATION}:""
   ttl: 5m
