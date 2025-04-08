@@ -28,7 +28,7 @@ sonar {
         property "sonar.projectKey", "CamilYed_safe-temporary-db-access"
         property "sonar.organization", "camilyed"
         property "sonar.host.url", "https://sonarcloud.io"
-        property "sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("jacoco/merged/jacoco.xml").get().asFile.absolutePath
+        property "sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory}/jacoco/merged/jacoco.xml"
     }
 }
 
@@ -86,7 +86,7 @@ jacocoTestReport {
 
 tasks.register('jacocoIntegrationTestReport', JacocoReport) {
     dependsOn integrationTest
-    executionData fileTree(buildDir).include(
+    executionData fileTree(layout.buildDirectory).include(
             "/jacoco/integrationTest.exec",
             "/jacoco/test.exec"
     )

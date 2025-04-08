@@ -3,7 +3,6 @@ name: Build and Test
 on:
   push:
     branches:
-      - dev
       - main
   pull_request:
     types: [opened, synchronize, reopened]
@@ -42,8 +41,11 @@ jobs:
       - name: Grant execute permissions to Gradle
         run: chmod +x gradlew
 
-      - name: Run tests and Sonar analysis
+      - name: Run tests and generate coverage
+        run: ./gradlew clean jacocoMergedReport
+
+      - name: Run SonarQube analysis
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew clean jacocoMergedReport sonar --info
+        run: ./gradlew sonar --info
