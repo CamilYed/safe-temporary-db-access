@@ -15,7 +15,7 @@ import pl.pw.cyber.dbaccess.domain.UserRepository;
 import java.io.IOException;
 import java.util.List;
 
-import static pl.pw.cyber.dbaccess.infrastructure.spring.security.SecurityConfig.AUTH_FAILURE_ATTRIBUTE;
+import static pl.pw.cyber.dbaccess.infrastructure.spring.security.SecurityConfig.AUTHORIZATION_FAILURE_ATTRIBUTE;
 
 @Slf4j
 class JwtAuthFilter extends OncePerRequestFilter {
@@ -49,7 +49,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
                 var userOpt = userRepository.findBy(username);
                 if (userOpt.isEmpty()) {
                     log.warn("User: {} not found", username);
-                    request.setAttribute(AUTH_FAILURE_ATTRIBUTE, true);
+                    request.setAttribute(AUTHORIZATION_FAILURE_ATTRIBUTE, true);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
                     return;
                 }

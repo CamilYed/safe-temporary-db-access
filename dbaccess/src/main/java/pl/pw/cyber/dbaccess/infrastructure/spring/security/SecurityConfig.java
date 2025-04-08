@@ -12,7 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 class SecurityConfig {
-    static final String AUTH_FAILURE_ATTRIBUTE = "AUTH_FAILURE_ATTRIBUTE";
+    static final String AUTHORIZATION_FAILURE_ATTRIBUTE = "AUTHORIZATION_FAILURE_ATTRIBUTE";
     private final JwtAuthFilter jwtAuthFilter;
 
     SecurityConfig(JwtAuthFilter jwtAuthFilter) {
@@ -28,10 +28,9 @@ class SecurityConfig {
           .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
           .exceptionHandling(exception -> exception
             .authenticationEntryPoint((request, response, authException) -> {
-                if (request.getAttribute(AUTH_FAILURE_ATTRIBUTE) == null) {
+                if (request.getAttribute(AUTHORIZATION_FAILURE_ATTRIBUTE) == null) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
                 }
-                //response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
             })
           );
         return http.build();
