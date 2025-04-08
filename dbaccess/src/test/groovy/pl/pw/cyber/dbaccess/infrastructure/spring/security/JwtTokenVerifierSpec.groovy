@@ -1,37 +1,58 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security
 
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.GenerateKeysAbility
+import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
 import pl.pw.cyber.dbaccess.testing.dsl.fixtures.JwtTokenFixture
 import spock.lang.Specification
 
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
+import java.security.interfaces.RSAPrivateKey
 import java.text.ParseException
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneId
+
+import static pl.pw.cyber.dbaccess.testing.dsl.builders.TestTokenBuilder.aToken
 
 class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility {
 
-    JwtTokenVerifier verifier
-    ECPrivateKey privateKey
+    private JwtTokenVerifier verifier
+    private ECPrivateKey privateKey
+    private static MovableClock CLOCK = new MovableClock(Instant.parse("2025-04-07T12:00:00Z"), ZoneId.of("UTC"))
+    private TestJwtTokenGenerator tokenGenerator
 
     def setup() {
         def keyPair = generateECKeyPair()
         privateKey = keyPair.private as ECPrivateKey
-        verifier = new JwtTokenVerifier(keyPair.public as ECPublicKey)
+        verifier = new JwtTokenVerifier(CLOCK, keyPair.public as ECPublicKey)
+        tokenGenerator = new TestJwtTokenGenerator(privateKey)
     }
 
     def "should verify valid token with EC keys"() {
         given:
-            def token = JwtTokenFixture.signedWithEC(privateKey, "alice")
+            def token = tokenGenerator.generateToken(aToken()
+                    .withSubject("alice")
+                    .withIssueTime(CLOCK.instant())
+                    .withTtl(Duration.ofMinutes(5))
+            )
 
-        expect:
+        when:
             def claims = verifier.verify(token)
+
+        then:
             claims.subject == "alice"
     }
 
     def "should fail verification if signature is invalid (wrong key)"() {
         given:
             def attackerKeys = generateECKeyPair()
-            def token = JwtTokenFixture.signedWithEC(attackerKeys.private as ECPrivateKey, "eve")
+            def attackerGenerator = new TestJwtTokenGenerator(attackerKeys.private as ECPrivateKey)
+
+            def token = attackerGenerator.generateToken(aToken()
+                    .withSubject("eve")
+                    .withIssueTime(CLOCK.instant())
+            )
 
         when:
             verifier.verify(token)
@@ -43,7 +64,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
     def "should fail if token is unsigned"() {
         given:
-            def token = JwtTokenFixture.unsigned("bob")
+            def token = JwtTokenFixture.unsigned()
 
         when:
             verifier.verify(token)
@@ -56,7 +77,12 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
     def "should fail if token is expired"() {
         given:
-            def token = JwtTokenFixture.expired(privateKey, "expired-user")
+            def expiredTime = CLOCK.instant() - Duration.ofMinutes(2)
+            def token = tokenGenerator.generateToken(aToken()
+                    .withSubject("expired-user")
+                    .withIssueTime(expiredTime)
+                    .withTtl(Duration.ofMinutes(1))
+            )
 
         when:
             verifier.verify(token)
@@ -69,10 +95,10 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
     def "should fail with invalid algorithm (RSA signed)"() {
         given:
             def rsaKey = generateRSAKeyPair()
-            def token = JwtTokenFixture.signedWithRSA(rsaKey.private)
+            def rsaToken = JwtTokenFixture.signedWithRSA(rsaKey.private as RSAPrivateKey)
 
         when:
-            verifier.verify(token)
+            verifier.verify(rsaToken)
 
         then:
             def ex = thrown(SecurityException)
@@ -81,7 +107,11 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
     def "should fail with wrong issuer"() {
         given:
-            def token = JwtTokenFixture.withIssuer(privateKey, "wrong-issuer", "bad-issuer")
+            def token = tokenGenerator.generateToken(aToken()
+                    .withSubject("wrong-issuer")
+                    .withIssuer("bad-issuer")
+                    .withIssueTime(CLOCK.instant())
+            )
 
         when:
             verifier.verify(token)
@@ -93,7 +123,11 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
     def "should fail with wrong audience"() {
         given:
-            def token = JwtTokenFixture.withAudience(privateKey, "wrong-audience", "evil-client")
+            def token = tokenGenerator.generateToken(aToken()
+                    .withSubject("wrong-audience")
+                    .withAudience("evil-client")
+                    .withIssueTime(CLOCK.instant())
+            )
 
         when:
             verifier.verify(token)

@@ -7,7 +7,9 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.GenerateKeysAbility
 
 import java.security.KeyPair
 import java.security.PrivateKey
+import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
+import java.time.Clock
 
 @TestConfiguration
 class JwtTokenTestConfig implements GenerateKeysAbility {
@@ -24,7 +26,12 @@ class JwtTokenTestConfig implements GenerateKeysAbility {
 
     @Bean
     @Primary
-    JwtTokenVerifier jwtTokenVerifier(KeyPair ecKeyPair) throws Exception {
-        return new JwtTokenVerifier(ecKeyPair.getPublic() as ECPublicKey)
+    JwtTokenVerifier jwtTokenVerifier(Clock clock, KeyPair ecKeyPair) throws Exception {
+        return new JwtTokenVerifier(clock, ecKeyPair.getPublic() as ECPublicKey)
+    }
+
+    @Bean
+    TestJwtTokenGenerator testJwtTokenGenerator(PrivateKey testPrivateKey) {
+        return new TestJwtTokenGenerator(testPrivateKey as ECPrivateKey)
     }
 }

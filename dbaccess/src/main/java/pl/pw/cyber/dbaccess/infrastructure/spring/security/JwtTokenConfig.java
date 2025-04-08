@@ -3,18 +3,27 @@ package pl.pw.cyber.dbaccess.infrastructure.spring.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
+import pl.pw.cyber.dbaccess.domain.UserRepository;
 
 import java.io.InputStream;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.time.Clock;
 
 @Configuration
 class JwtTokenConfig {
 
     @Bean
-    JwtTokenVerifier jwtTokenVerifier(JwtKeyProperties props) throws Exception {
-        return new JwtTokenVerifier(loadPublicKey(props.publicKey()));
+    JwtTokenVerifier jwtTokenVerifier(Clock clock, JwtKeyProperties props) throws Exception {
+        return new JwtTokenVerifier(clock, loadPublicKey(props.publicKey()));
+    }
+
+    @Bean
+    public JwtAuthFilter jwtAuthenticationFilter(
+      JwtTokenVerifier jwtTokenVerifier, UserRepository userRepository
+    ) {
+        return new JwtAuthFilter(jwtTokenVerifier, userRepository);
     }
 
     private ECPublicKey loadPublicKey(Resource res) throws Exception {

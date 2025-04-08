@@ -1,6 +1,6 @@
 package pl.pw.cyber.dbaccess.testing.dsl.fixtures
 
-import com.nimbusds.jose.Algorithm
+
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.ECDSASigner
@@ -11,9 +11,6 @@ import com.nimbusds.jwt.SignedJWT
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.RSAPrivateKey
 
-/**
- * Helper class for generating signed and unsigned JWTs in integration tests.
- */
 class JwtTokenFixture {
 
     static String signedWithEC(ECPrivateKey privateKey, String subject = "test-user") {
@@ -79,42 +76,6 @@ class JwtTokenFixture {
                 .audience(["dbaccess-client"])
                 .issueTime(now)
                 .expirationTime(expired)
-                .build()
-
-        def jwt = new SignedJWT(
-                new JWSHeader.Builder(JWSAlgorithm.ES256).build(),
-                claims
-        )
-
-        jwt.sign(new ECDSASigner(privateKey))
-        return jwt.serialize()
-    }
-
-    static String withIssuer(ECPrivateKey privateKey, String subject, String issuer) {
-        def claims = new JWTClaimsSet.Builder()
-                .subject(subject)
-                .issuer(issuer)
-                .audience(["dbaccess-client"])
-                .issueTime(new Date())
-                .expirationTime(new Date(System.currentTimeMillis() + 60_000))
-                .build()
-
-        def jwt = new SignedJWT(
-                new JWSHeader.Builder(JWSAlgorithm.ES256).build(),
-                claims
-        )
-
-        jwt.sign(new ECDSASigner(privateKey))
-        return jwt.serialize()
-    }
-
-    static String withAudience(ECPrivateKey privateKey, String subject, String audience) {
-        def claims = new JWTClaimsSet.Builder()
-                .subject(subject)
-                .issuer("dbaccess-api")
-                .audience([audience])
-                .issueTime(new Date())
-                .expirationTime(new Date(System.currentTimeMillis() + 60_000))
                 .build()
 
         def jwt = new SignedJWT(

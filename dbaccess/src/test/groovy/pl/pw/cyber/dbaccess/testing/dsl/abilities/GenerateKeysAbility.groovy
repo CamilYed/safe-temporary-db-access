@@ -2,17 +2,14 @@ package pl.pw.cyber.dbaccess.testing.dsl.abilities
 
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.PrivateKey
-import java.security.interfaces.ECPrivateKey
-import java.security.interfaces.ECPublicKey
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
+import java.security.spec.ECGenParameterSpec
 
 trait GenerateKeysAbility {
 
-    KeyPair generateECKeyPair() {
+    KeyPair generateECKeyPair(String curveName = "secp256r1") {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC")
-        keyGen.initialize(256) // ES256
+        def ecSpec = new ECGenParameterSpec(curveName)
+        keyGen.initialize(ecSpec)
         return keyGen.generateKeyPair()
     }
 
@@ -20,27 +17,5 @@ trait GenerateKeysAbility {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA")
         keyGen.initialize(2048)
         return keyGen.generateKeyPair()
-    }
-
-    PrivateKey generatePrivateEcKey() {
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC")
-        keyGen.initialize(256)
-        return keyGen.generateKeyPair().private
-    }
-
-    ECPublicKey toECPublicKey(KeyPair pair) {
-        return (ECPublicKey) pair.public
-    }
-
-    ECPrivateKey toECPrivateKey(KeyPair pair) {
-        return (ECPrivateKey) pair.private
-    }
-
-    RSAPublicKey toRSAPublicKey(KeyPair pair) {
-        return (RSAPublicKey) pair.public
-    }
-
-    RSAPrivateKey toRSAPrivateKey(KeyPair pair) {
-        return (RSAPrivateKey) pair.private
     }
 }
