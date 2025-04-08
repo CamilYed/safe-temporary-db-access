@@ -5,6 +5,7 @@ plugins {
     id 'org.springframework.boot' version '3.2.0'
     id 'io.spring.dependency-management' version '1.1.4'
     id "org.sonarqube" version "6.0.1.5171"
+    id 'jacoco'
 }
 
 apply from: "$rootDir/dbaccess/integrationTest.gradle"
@@ -27,6 +28,7 @@ sonar {
         property "sonar.projectKey", "CamilYed_safe-temporary-db-access"
         property "sonar.organization", "camilyed"
         property "sonar.host.url", "https://sonarcloud.io"
+        property "sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("jacoco/merged/jacoco.xml").get().asFile.absolutePath
     }
 }
 
@@ -73,5 +75,54 @@ test {
     }
 }
 
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacoco/unit')
+    }
+}
+
+tasks.register('jacocoIntegrationTestReport', JacocoReport) {
+    dependsOn integrationTest
+    executionData fileTree(buildDir).include(
+            "/jacoco/integrationTest.exec",
+            "/jacoco/test.exec"
+    )
+    sourceDirectories.setFrom files(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom files(sourceSets.main.output)
+    reports {
+        xml.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacoco/integration')
+    }
+}
+
+tasks.register('jacocoMergedReport', JacocoReport) {
+    dependsOn test, integrationTest
+
+    executionData fileTree(buildDir).include(
+            '/jacoco/test.exec',
+            '/jacoco/integrationTest.exec'
+    )
+
+    sourceDirectories.setFrom files(sourceSets.main.allSource.srcDirs)
+    classDirectories.setFrom files(sourceSets.main.output)
+
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation = layout.buildDirectory.file('jacoco/merged/jacoco.xml')
+        html.outputLocation = layout.buildDirectory.dir('jacoco/merged/html')
+    }
+}
+
 // https://github.com/gradle/gradle/issues/14889
 tasks.register("prepareKotlinBuildScriptModel") {}
+
+check {
+    dependsOn jacocoTestReport
+    dependsOn jacocoIntegrationTestReport
+    dependsOn jacocoMergedReport
+}
