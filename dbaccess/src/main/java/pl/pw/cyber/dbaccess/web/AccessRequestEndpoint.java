@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/access-request")
 class AccessRequestEndpoint {
 
-  @PostMapping
-  public ResponseEntity<Void> requestAccess() {
-    return ResponseEntity.ok().build();
-  }
+    @PostMapping
+    public ResponseEntity<Void> requestAccess() {
+        return ResponseEntity.ok().build();
+    }
 }

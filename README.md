@@ -27,18 +27,17 @@ The core idea: let developers request short-lived database access through a secu
 
 ## 🔹 Phase 0: Security & Authorization (Start Here)
 
-- [ ] **Test**: only authorized users can request access (JWT + allowlist)
-- [ ] **Code**: implement Spring Security + JWT parser
-- [ ] **Test**: Missing JWT → 401 Unauthorized
-- [ ] **Test**: Expired or invalid JWT → 401 / 403
-- [ ] **Test**: JWT without `sub` → 400 or 403
-- [ ] **Test**: User not in allowlist → 403
-- [ ] **Test**: User in allowlist → 200 OK
-- [ ] **Test**: Attempt to request forbidden level `ADMIN` → 403 / 400
-- [ ] **Code**: JWT parsing & token validator
-- [ ] **Code**: AuthorizedUsersRepository reading from YAML/JSON
-- [ ] **Code**: Simulate access approval flow (optional)
+## 🔹 Phase 0: Security & Authorization (Start Here)
 
+- [✅] **Test**: only authorized users can request access (JWT + allowlist)
+- [✅] **Code**: implement Spring Security + JWT parser
+- [✅] **Test**: Missing JWT → 401 Unauthorized
+- [✅] **Test**: Expired or invalid JWT → 401 / 403
+- [✅] **Test**: JWT without sub → 400 or 403
+- [✅] **Test**: User not in allowlist → 403
+- [✅] **Test**: User in allowlist → 200 OK
+- [✅] **Code**: JWT parsing & token validator
+- [✅] **Code**: AuthorizedUsersRepository reading from YAML/JSON
 
 ## 🔹 1. Functional Core Scenarios (Happy Path)
 
