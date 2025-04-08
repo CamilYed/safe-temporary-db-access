@@ -32,6 +32,8 @@ tasks.register('integrationTest', Test) {
     classpath = sourceSets.integrationTest.runtimeClasspath
     outputs.upToDateWhen { false }
     mustRunAfter test
-}
 
-check.dependsOn integrationTest
+    jacoco {
+        destinationFile = file("$buildDir/jacoco/integrationTest.exec")
+    }
+}
