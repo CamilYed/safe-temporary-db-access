@@ -28,7 +28,7 @@ sonar {
         property "sonar.projectKey", "CamilYed_safe-temporary-db-access"
         property "sonar.organization", "camilyed"
         property "sonar.host.url", "https://sonarcloud.io"
-        property "sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory}/jacoco/merged/jacoco.xml"
+        property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/jacoco/merged/jacoco.xml"
     }
 }
 
