@@ -1,7 +1,7 @@
-![Build](https://github.com/CamilYed/safe-temporary-db-access/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://sonarcloud.io/api/project_badges/measure?project=CamilYed_safe-temporary-db-access&metric=coverage)
-![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=CamilYed_safe-temporary-db-access&metric=alert_status)
-![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=CamilYed_safe-temporary-db-access&metric=security_rating)
+[![Build](https://github.com/CamilYed/safe-temporary-db-access/actions/workflows/ci.yml/badge.svg)](https://github.com/CamilYed/safe-temporary-db-access/actions)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=CamilYed_safe-temporary-db-access&metric=coverage)](https://sonarcloud.io/dashboard?id=CamilYed_safe-temporary-db-access)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=CamilYed_safe-temporary-db-access&metric=alert_status)](https://sonarcloud.io/dashboard?id=CamilYed_safe-temporary-db-access)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=CamilYed_safe-temporary-db-access&metric=security_rating)](https://sonarcloud.io/dashboard?id=CamilYed_safe-temporary-db-access)
 
 🔎 [View SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=CamilYed_safe-temporary-db-access)
 # Secure and Temporary Access to Production Databases
