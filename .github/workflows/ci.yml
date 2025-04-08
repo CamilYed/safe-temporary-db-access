@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build, Test and (maybe) Analyze
+    name: build
     runs-on: ubuntu-latest
     environment: DEV
     steps:
