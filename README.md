@@ -25,9 +25,7 @@ The core idea: let developers request short-lived database access through a secu
 
 ### ✅ Phase 2 – Integration Test Strategy Checklist
 
-## 🔹 Phase 0: Security & Authorization (Start Here)
-
-## 🔹 Phase 0: Security & Authorization (Start Here)
+## 🔹 Phase 0: Security & Authorization 
 
 - [✅] **Test**: only authorized users can request access (JWT + allowlist)
 - [✅] **Code**: implement Spring Security + JWT parser
