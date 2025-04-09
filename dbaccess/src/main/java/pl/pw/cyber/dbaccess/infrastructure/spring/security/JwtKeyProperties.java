@@ -17,8 +17,13 @@ record JwtKeyProperties(
     static final String ISSUER = "dbaccess-api";
     static final String AUDIENCE = "dbaccess-client";
 
-    public JwtKeyProperties(Resource publicKey, Duration ttl) {
-        this.publicKey = publicKey;
-        this.ttl = ttl != null ? ttl : DEFAULT_TTL_DURATION;
+    public JwtKeyProperties {
+        if (ttl == null) {
+            ttl = DEFAULT_TTL_DURATION;
+        }
+    }
+
+    public static JwtKeyProperties withDefaultTtl(Resource publicKey) {
+        return new JwtKeyProperties(publicKey, DEFAULT_TTL_DURATION);
     }
 }
