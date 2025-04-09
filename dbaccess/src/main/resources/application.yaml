@@ -13,4 +13,3 @@ spring:
 
 jwt:
   public-key: ${PUBLIC_KEY_LOCATION}:""
-  ttl: 5m

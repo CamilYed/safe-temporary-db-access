@@ -19,6 +19,9 @@ class JwtTokenVerifier {
     private static final int MINIMUM_PUBLIC_EC_KEY_LENGTH = 256;
     private static final Duration MAX_TOKEN_TTL = Duration.ofMinutes(5);
 
+    static final String ISSUER = "dbaccess-api";
+    static final String AUDIENCE = "dbaccess-client";
+
     JwtTokenVerifier(Clock clock, ECPublicKey publicKey) {
         if (isKeyToWeak(publicKey)) {
             throw new IllegalArgumentException("EC key too weak: minimum 256 bits required");
@@ -65,12 +68,12 @@ class JwtTokenVerifier {
         }
 
         // Additional checks for issuer and audience
-        if (!JwtKeyProperties.ISSUER.equals(claims.getIssuer())) {
+        if (!ISSUER.equals(claims.getIssuer())) {
             log.warn("JWT not issuer: {}", claims.getIssuer());
             throw new SecurityException("Invalid issuer");
         }
 
-        if (!claims.getAudience().contains(JwtKeyProperties.AUDIENCE)) {
+        if (!claims.getAudience().contains(AUDIENCE)) {
             log.warn("JWT not audience: {}", claims.getAudience());
             throw new SecurityException("Invalid audience");
         }

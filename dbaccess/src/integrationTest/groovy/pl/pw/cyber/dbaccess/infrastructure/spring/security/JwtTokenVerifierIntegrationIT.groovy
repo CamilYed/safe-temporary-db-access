@@ -25,7 +25,7 @@ class JwtTokenVerifierIntegrationIT extends Specification {
 
         then:
             claims.subject == "integration-user"
-            claims.issuer == JwtKeyProperties.ISSUER
-            claims.audience.contains(JwtKeyProperties.AUDIENCE)
+            claims.issuer == JwtTokenVerifier.ISSUER
+            claims.audience.contains(JwtTokenVerifier.AUDIENCE)
     }
 }

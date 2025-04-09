@@ -4,26 +4,11 @@ package pl.pw.cyber.dbaccess.infrastructure.spring.security;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
-import java.time.Duration;
-
 
 @ConfigurationProperties(prefix = "jwt")
-record JwtKeyProperties(
-  Resource publicKey,
-  Duration ttl
-) {
+record JwtKeyProperties(Resource publicKey) {
 
-    static final Duration DEFAULT_TTL_DURATION = Duration.ofMinutes(5);
-    static final String ISSUER = "dbaccess-api";
-    static final String AUDIENCE = "dbaccess-client";
-
-    public JwtKeyProperties {
-        if (ttl == null) {
-            ttl = DEFAULT_TTL_DURATION;
-        }
-    }
-
-    public static JwtKeyProperties withDefaultTtl(Resource publicKey) {
-        return new JwtKeyProperties(publicKey, DEFAULT_TTL_DURATION);
+    public static JwtKeyProperties of(Resource publicKey) {
+        return new JwtKeyProperties(publicKey);
     }
 }
