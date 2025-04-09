@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.adapters.filedatabase;
 
+import lombok.extern.slf4j.Slf4j;
 import org.yaml.snakeyaml.Yaml;
 import pl.pw.cyber.dbaccess.domain.User;
 import pl.pw.cyber.dbaccess.domain.UserRepository;
@@ -9,12 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 class YamlUserRepository implements UserRepository {
 
     private final List<String> allowlist;
 
-    YamlUserRepository() {
-        this.allowlist = loadAllowlistFromFile();
+    YamlUserRepository(String allowlist) {
+        this.allowlist = loadAllowlistFromFile(allowlist);
     }
 
     @Override
@@ -25,13 +27,14 @@ class YamlUserRepository implements UserRepository {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> loadAllowlistFromFile() {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("example-users.yaml")) {
+    private List<String> loadAllowlistFromFile(String allowlist) {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(allowlist)) {
             Yaml yaml = new Yaml();
             Map<String, Object> data = yaml.load(input);
             return (List<String>) data.get("allowlist");
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load allowlist from example-users.yaml", e);
+            log.error("Error loading allowlist from file", e);
+            return List.of();
         }
     }
 }
