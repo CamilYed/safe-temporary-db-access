@@ -6,9 +6,11 @@ import org.springframework.core.io.Resource;
 import pl.pw.cyber.dbaccess.domain.UserRepository;
 
 import java.io.InputStream;
+import java.security.KeyFactory;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Clock;
 
 @Configuration
@@ -26,11 +28,19 @@ class JwtTokenConfig {
         return new JwtAuthFilter(jwtTokenVerifier, userRepository);
     }
 
+    /**
+     * Loads an EC public key from the given resource.
+     * The key must be in DER-encoded X.509 format (binary),
+     * not PEM (Base64 with BEGIN/END headers).
+     *
+     * @param res resource pointing to the DER-encoded EC public key
+     * @return ECPublicKey loaded from the resource
+     * @throws Exception if key parsing fails
+     */
     private ECPublicKey loadPublicKey(Resource res) throws Exception {
-        var cf = CertificateFactory.getInstance("X.509");
-        try (InputStream in = res.getInputStream()) {
-            var cert = (X509Certificate) cf.generateCertificate(in);
-            return (ECPublicKey) cert.getPublicKey();
-        }
+        byte[] keyBytes = res.getInputStream().readAllBytes();
+        KeyFactory kf = KeyFactory.getInstance("EC");
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+        return (ECPublicKey) kf.generatePublic(keySpec);
     }
 }
