@@ -33,6 +33,6 @@ class YamlUserRepositorySpec extends Specification {
             def repo = new YamlUserRepository("non-existing.yaml")
 
         expect:
-            repo.findBy("whatever").isEmpty()
+            repo.findBy("alice").isEmpty()
     }
 }
