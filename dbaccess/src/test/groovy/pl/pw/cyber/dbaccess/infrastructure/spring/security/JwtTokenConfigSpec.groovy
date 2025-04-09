@@ -15,7 +15,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
             def ecKey = generateECKeyPair()
             def encoded = ecKey.public.encoded
             def resource = new ByteArrayResource(encoded)
-            def props = JwtKeyProperties.withDefaultTtl(resource)
+            def props = JwtKeyProperties.of(resource)
             def config = new JwtTokenConfig()
 
         when:
@@ -32,7 +32,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
         g5rIbEl/6ghgU0aKcF+TkMJ3Ya5qLzoaVsc6NeVfaFgHTvUcZoTxTw==
         -----END PUBLIC KEY-----'''
             def resource = new ByteArrayResource(pem.bytes)
-            def props = JwtKeyProperties.withDefaultTtl(resource)
+            def props = JwtKeyProperties.of(resource)
             def config = new JwtTokenConfig()
 
         when:
@@ -46,7 +46,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
     def "should fail with empty key resource"() {
         given:
             def emptyResource = new ByteArrayResource(new byte[0])
-            def props = JwtKeyProperties.withDefaultTtl(emptyResource)
+            def props = JwtKeyProperties.of(emptyResource)
             def config = new JwtTokenConfig()
 
         when:
@@ -61,7 +61,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
         given:
             def badBytes = "not a real key".bytes
             def resource = new ByteArrayResource(badBytes)
-            def props = JwtKeyProperties.withDefaultTtl(resource)
+            def props = JwtKeyProperties.of(resource)
             def config = new JwtTokenConfig()
 
         when:
