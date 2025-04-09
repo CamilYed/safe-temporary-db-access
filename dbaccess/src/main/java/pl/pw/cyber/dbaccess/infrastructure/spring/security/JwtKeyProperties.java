@@ -10,7 +10,6 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "jwt")
 record JwtKeyProperties(
   Resource publicKey,
-  Resource privateKey,
   Duration ttl
 ) {
 
@@ -18,9 +17,8 @@ record JwtKeyProperties(
     static final String ISSUER = "dbaccess-api";
     static final String AUDIENCE = "dbaccess-client";
 
-    public JwtKeyProperties(Resource publicKey, Resource privateKey, Duration ttl) {
+    public JwtKeyProperties(Resource publicKey, Duration ttl) {
         this.publicKey = publicKey;
-        this.privateKey = privateKey;
         this.ttl = ttl != null ? ttl : DEFAULT_TTL_DURATION;
     }
 }

@@ -9,6 +9,6 @@ class FileDataBaseConfig {
 
     @Bean
     UserRepository userRepository() {
-        return new YamlUserRepository();
+        return new YamlUserRepository("example-users.yaml");
     }
 }
