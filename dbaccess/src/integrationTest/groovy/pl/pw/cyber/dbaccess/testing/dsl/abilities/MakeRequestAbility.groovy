@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.testing.dsl.abilities
 
+import groovy.json.JsonOutput
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.http.HttpEntity
@@ -39,7 +40,7 @@ trait MakeRequestAbility {
         private String url = ""
         private HttpMethod method = HttpMethod.GET
         private String contentType = MediaType.APPLICATION_JSON_VALUE
-        private Object body = null
+        private Map body = null
         private String accept = MediaType.APPLICATION_JSON_VALUE
         private Map<String, String> headers = [:]
 
@@ -63,7 +64,7 @@ trait MakeRequestAbility {
             return this
         }
 
-        HttpRequestBuilder withBody(Object body) {
+        HttpRequestBuilder withBody(Map body) {
             this.body = body
             return this
         }
@@ -89,7 +90,7 @@ trait MakeRequestAbility {
             httpHeaders.setAccept([MediaType.valueOf(accept)])
             headers.each { k, v -> httpHeaders.set(k, v) }
 
-            HttpEntity<Object> entity = new HttpEntity<>(body, httpHeaders)
+            HttpEntity<Object> entity = new HttpEntity<>(JsonOutput.toJson(body), httpHeaders)
             String fullUrl = "http://localhost:${port}${url}"
             return restTemplate.exchange(fullUrl, method, entity, Map)
         }

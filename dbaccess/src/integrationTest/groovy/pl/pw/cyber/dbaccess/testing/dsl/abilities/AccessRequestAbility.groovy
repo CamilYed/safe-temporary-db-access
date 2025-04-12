@@ -3,12 +3,16 @@ package pl.pw.cyber.dbaccess.testing.dsl.abilities
 
 import org.springframework.http.HttpMethod
 import org.springframework.http.ResponseEntity
+import pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder
+
+import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 
 trait AccessRequestAbility implements MakeRequestAbility {
 
-    ResponseEntity<Map> accessRequest(String user) {
+    ResponseEntity<Map> accessRequest(String user = "user", AccessRequestJsonBuilder request) {
         return accessRequestBuilder()
                 .withHeader("Authorization", "Bearer ${validToken(user)}")
+                .withBody(request.toMap())
                 .makeRequest()
     }
 
@@ -18,6 +22,6 @@ trait AccessRequestAbility implements MakeRequestAbility {
                 .withMethod(HttpMethod.POST)
                 .withContentType("application/json")
                 .withAccept("application/json")
-                .withBody([:])
+                .withBody(anAccessRequest().toMap())
     }
 }

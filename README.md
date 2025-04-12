@@ -31,7 +31,7 @@ The core idea: let developers request short-lived database access through a secu
 
 ### ✅ Phase 2 – Integration Test Strategy Checklist
 
-## 🔹 Phase 0: Security & Authorization 
+#### 🔹 Step 0: Security & Authorization 
 
 - [✅] **Test**: only authorized users can request access (JWT + allowlist)
 - [✅] **Code**: implement Spring Security + JWT parser
@@ -43,7 +43,36 @@ The core idea: let developers request short-lived database access through a secu
 - [✅] **Code**: JWT parsing & token validator
 - [✅] **Code**: AuthorizedUsersRepository reading from YAML/JSON
 
-## 🔹 1. Functional Core Scenarios (Happy Path)
+#### 🔹 Step 1 – Input Validation
+Code / Tests written:
+
+- [✅] permissionLevel is required
+
+- [✅] permissionLevel must be one of: READ_ONLY, READ_WRITE, DELETE
+
+- [✅] durationMinutes must be between 1 and 60
+
+- [✅] targetDatabase is required and must not be blank
+
+- [ ] targetDatabase must be resolvable (configured + env) // TODO
+
+Test cases:
+
+- [✅] Valid request returns 200
+
+- [✅] Missing permissionLevel → 400
+
+- [✅] Invalid permissionLevel → 400
+
+- [✅] durationMinutes = 0 → 400
+
+- [✅] targetDatabase is blank → 400
+
+- [✅] targetDatabase not found → 400
+
+- [✅] Multiple validation errors → 400 + error list
+
+#### 🔹 Step 2. Functional Core Scenarios (Happy Path)
 
 - [ ] 1 – Valid request creates user with `READ_ONLY` permissions
 - [ ] 2 – User with `READ_WRITE` gets INSERT, UPDATE rights
@@ -53,7 +82,7 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
-## 🔹 2. Edge Cases & Input Validation
+#### 🔹 Step 3. Edge Cases & Input Validation
 
 - [ ] 6 – Invalid `permissionLevel` returns 400
 - [ ] 7 – `durationMinutes` above max TTL (e.g., 240) → 400
@@ -62,7 +91,7 @@ The core idea: let developers request short-lived database access through a secu
 - [ ] 10 – Concurrent access requests → no conflicts
 ---
 
-## 🔍 3. PostgreSQL – Role & Permissions Verification
+#### 🔍 Step 4. PostgreSQL – Role & Permissions Verification
 
 - [ ] 16 – User exists in `pg_roles`
 - [ ] 17 – Only granted allowed privileges (e.g. no DROP)
@@ -71,20 +100,13 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
-## 📦 5. MongoDB – Audit Logging
+#### 📦 Step 5. MongoDB – Audit Logging
 
 - [ ] 20 – Audit entry saved with requestor, username, and TTL
 - [ ] 21 – Audit entry includes permission level
 - [ ] 22 – Audit entry does not store the password
 
-### 🔹 Phase 3: Security & Authorization
-
-- [ ] **Test**: only authorized users can request access (JWT)
-- [ ] **Code**: implement Spring Security with JWT
-- [ ] **Test**: approval is required before access is granted (simulated for PoC)
-- [ ] **Code**: simulate access approval flow
-
-### 🔹 Phase 4: Monitoring (Optional)
+### 🔹 Phase 3: Monitoring (Optional)
 
 - [ ] Integrate Suricata (Docker container)
 - [ ] Add simple rule: detect `SELECT *` without `WHERE`, `DROP`, etc.

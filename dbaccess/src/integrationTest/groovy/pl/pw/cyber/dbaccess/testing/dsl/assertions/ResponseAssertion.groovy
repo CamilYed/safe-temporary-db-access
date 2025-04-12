@@ -18,4 +18,19 @@ class ResponseAssertion {
         assert response.statusCode.value() == expectedStatusCode: "Expected status code ${expectedStatusCode} but was ${response.statusCode.value()}"
         return this
     }
+
+
+    ResponseAssertion hasValidationError(String expectedMessage) {
+        List<String> errors = (response.body?.errors ?: []) as List<String>
+        assert errors.contains(expectedMessage): "Expected validation error: '${expectedMessage}', but was: ${errors}"
+        return this
+    }
+
+    ResponseAssertion hasValidationErrors(List<String> expectedMessages) {
+        List<String> errors = (response.body?.errors ?: []) as List<String>
+        expectedMessages.each { expected ->
+            assert errors.contains(expected): "Expected validation error: '${expected}', but was: ${errors}"
+        }
+        return this
+    }
 }
