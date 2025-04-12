@@ -5,10 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import pl.pw.cyber.dbaccess.domain.UserRepository;
 
-import java.io.InputStream;
 import java.security.KeyFactory;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Clock;

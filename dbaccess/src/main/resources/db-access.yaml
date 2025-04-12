@@ -1,0 +1,6 @@
+db:
+  databases:
+    test1:
+      envPrefix: TEST1
+    test2:
+      envPrefix: TEST2

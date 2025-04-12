@@ -4,10 +4,12 @@ import pl.pw.cyber.dbaccess.testing.BaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ClockControlAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSetupAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.LogCaptureAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.TokenGenerationAbility
 
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
+import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.TestTokenBuilder.aToken
 
 class AuthorizationIT extends BaseIT implements
@@ -15,11 +17,13 @@ class AuthorizationIT extends BaseIT implements
         AddExampleUserAbility,
         ClockControlAbility,
         TokenGenerationAbility,
-        LogCaptureAbility {
+        LogCaptureAbility,
+        DatabaseSetupAbility {
 
 
     def setup() {
         setupLogCapture('pl.pw.cyber.dbaccess.infrastructure.spring.security.JwtAuthFilter')
+        thereIs(aResolvableDatabase())
     }
 
     def cleanup() {
