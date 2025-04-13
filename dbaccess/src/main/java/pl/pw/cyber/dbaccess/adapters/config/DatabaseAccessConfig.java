@@ -12,7 +12,15 @@ import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider;
 class DatabaseAccessConfig {
 
     @Bean
-    DatabaseConfigurationProvider databaseConfigurationProvider(DatabaseAccessProperties props) {
-        return new YamlDatabaseConfigurationProvider(props);
+    DatabaseConfigurationProvider databaseConfigurationProvider(
+      DatabaseAccessProperties props,
+      EnvironmentReader env
+    ) {
+        return new YamlDatabaseConfigurationProvider(props, env);
+    }
+
+    @Bean
+    EnvironmentReader environmentReader() {
+        return new SystemEnvironmentReader();
     }
 }

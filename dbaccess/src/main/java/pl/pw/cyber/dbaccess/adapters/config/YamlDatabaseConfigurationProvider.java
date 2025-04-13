@@ -12,9 +12,13 @@ class YamlDatabaseConfigurationProvider implements DatabaseConfigurationProvider
     private static final String DB_PASSWORD_ENV_SUFFIX = "_DB_PASSWORD";
 
     private final DatabaseAccessProperties properties;
+    private final EnvironmentReader env;
 
-    YamlDatabaseConfigurationProvider(DatabaseAccessProperties properties) {
+    YamlDatabaseConfigurationProvider(
+      DatabaseAccessProperties properties,
+      EnvironmentReader env) {
         this.properties = properties;
+        this.env = env;
     }
 
     @Override
@@ -28,9 +32,9 @@ class YamlDatabaseConfigurationProvider implements DatabaseConfigurationProvider
         if (def == null) return Optional.empty();
 
         String prefix = def.envPrefix();
-        String url = System.getenv(prefix + DB_URL_ENV_SUFFIX);
-        String username = System.getenv(prefix + DB_USERNAME_ENV_SUFFIX);
-        String password = System.getenv(prefix + DB_PASSWORD_ENV_SUFFIX);
+        String url = env.getEnv(prefix + DB_URL_ENV_SUFFIX);
+        String username = env.getEnv(prefix + DB_USERNAME_ENV_SUFFIX);
+        String password = env.getEnv(prefix + DB_PASSWORD_ENV_SUFFIX);
 
         if (url == null || username == null || password == null) return Optional.empty();
 
