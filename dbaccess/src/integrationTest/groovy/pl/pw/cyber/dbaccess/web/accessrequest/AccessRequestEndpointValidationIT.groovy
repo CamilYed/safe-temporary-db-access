@@ -1,4 +1,4 @@
-package pl.pw.cyber.dbaccess.web
+package pl.pw.cyber.dbaccess.web.accessrequest
 
 import pl.pw.cyber.dbaccess.testing.BaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
@@ -9,7 +9,7 @@ import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.asse
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
 
-class AccessRequestEndpointIT extends BaseIT implements
+class AccessRequestEndpointValidationIT extends BaseIT implements
         AccessRequestAbility,
         AddExampleUserAbility,
         DatabaseSetupAbility {

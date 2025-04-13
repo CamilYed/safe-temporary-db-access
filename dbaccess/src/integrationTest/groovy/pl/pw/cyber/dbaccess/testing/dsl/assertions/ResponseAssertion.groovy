@@ -14,11 +14,14 @@ class ResponseAssertion {
         return new ResponseAssertion(response)
     }
 
+    ResponseAssertion isOK() {
+        return hasStatusCode(200)
+    }
+
     ResponseAssertion hasStatusCode(int expectedStatusCode) {
         assert response.statusCode.value() == expectedStatusCode: "Expected status code ${expectedStatusCode} but was ${response.statusCode.value()}"
         return this
     }
-
 
     ResponseAssertion hasValidationError(String expectedMessage) {
         List<String> errors = (response.body?.errors ?: []) as List<String>

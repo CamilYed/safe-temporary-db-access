@@ -6,9 +6,9 @@ import org.springframework.http.ProblemDetail;
 import java.net.URI;
 import java.util.List;
 
-public final class ProblemDetailBuilder {
+public final class ProblemDetailsBuilder {
 
-    private ProblemDetailBuilder() {}
+    private ProblemDetailsBuilder() {}
 
     public static ProblemDetail validationError(List<String> errors) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
