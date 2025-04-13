@@ -54,7 +54,7 @@ Code / Tests written:
 
 - [✅] targetDatabase is required and must not be blank
 
-- [ ] targetDatabase must be resolvable (configured + env) // TODO
+- [✅] targetDatabase must be resolvable (configured + env)
 
 Test cases:
 
@@ -82,16 +82,7 @@ Test cases:
 
 ---
 
-#### 🔹 Step 3. Edge Cases & Input Validation
-
-- [ ] 6 – Invalid `permissionLevel` returns 400
-- [ ] 7 – `durationMinutes` above max TTL (e.g., 240) → 400
-- [ ] 8 – `durationMinutes` <= 0 → 400
-- [ ] 9 – Empty/null `targetDatabase` → 400
-- [ ] 10 – Concurrent access requests → no conflicts
----
-
-#### 🔍 Step 4. PostgreSQL – Role & Permissions Verification
+#### 🔍 Step 3. PostgreSQL – Role & Permissions Verification
 
 - [ ] 16 – User exists in `pg_roles`
 - [ ] 17 – Only granted allowed privileges (e.g. no DROP)
@@ -100,7 +91,7 @@ Test cases:
 
 ---
 
-#### 📦 Step 5. MongoDB – Audit Logging
+#### 📦 Step 4. MongoDB – Audit Logging
 
 - [ ] 20 – Audit entry saved with requestor, username, and TTL
 - [ ] 21 – Audit entry includes permission level
