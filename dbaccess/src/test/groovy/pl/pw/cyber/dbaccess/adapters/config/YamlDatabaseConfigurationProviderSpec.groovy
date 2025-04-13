@@ -48,10 +48,10 @@ class YamlDatabaseConfigurationProviderSpec extends Specification {
         then:
             result.isPresent()
             with(result.get()) {
-                name == "test_db"
-                url == db.url
-                username == db.username
-                password == db.password
+                name() == "test_db"
+                url() == db.url
+                username() == db.username
+                password() == db.password
             }
     }
 
