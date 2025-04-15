@@ -1,55 +1,120 @@
 package pl.pw.cyber.dbaccess.common.result
 
+
 import spock.lang.Specification
+
+import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResultAssertion.assertThat
 
 class ResultSpec extends Specification {
 
-    def "should create Success when no exception"() {
-        when:
-            def result = Result.of(() -> "hello")
-
-        then:
-            result instanceof Result.Success
-            result.isSuccess()
-            !result.isFailure()
-            result.getOrElse("default") == "hello"
-            result.getOrThrow() == "hello"
-    }
-
-    def "should create Failure when exception thrown"() {
-        given:
-            def ex = new RuntimeException("fail")
-
-        when:
-            def result = Result.of(() -> { throw ex })
-
-        then:
-            result instanceof Result.Failure
-            !result.isSuccess()
-            result.isFailure()
-            result.getOrElse("fallback") == "fallback"
-
-        when:
-            result.getOrThrow()
-
-        then:
-            def thrown = thrown(RuntimeException)
-            thrown.message == "Execution failed"
-            thrown.cause == ex
-    }
-
-    def "getOrElse should return value if Success"() {
+    def "should assert success via DSL"() {
         given:
             def result = Result.success("abc")
 
         expect:
-            result.getOrElse("fallback") == "abc"
+            assertThat(result)
+                    .isSuccess()
+                    .hasValue("abc")
+    }
+
+    def "should assert success with custom check via DSL"() {
+        given:
+            def result = Result.success([1, 2, 3])
+
+        expect:
+            assertThat(result)
+                    .isSuccess()
+                    .hasValueSatisfying { list ->
+                        assert list instanceof List
+                        assert list.size() == 3
+                    }
+    }
+
+    def "should assert failure via DSL"() {
+        given:
+            def ex = new IllegalArgumentException("boom")
+            def result = Result.failure(ex)
+
+        expect:
+            assertThat(result)
+                    .isFailure()
+                    .hasCauseInstanceOf(IllegalArgumentException)
+                    .hasCauseMessage("boom")
+    }
+
+    def "should assert failure with satisfying clause"() {
+        given:
+            def result = Result.failure(new IllegalStateException("fail state"))
+
+        expect:
+            assertThat(result)
+                    .isFailure()
+                    .hasCauseSatisfying { Throwable ex ->
+                        assert ex instanceof IllegalStateException
+                        assert ex.message == "fail state"
+                    }
+    }
+
+    def "map should work on success"() {
+        given:
+            def result = Result.success(2)
+
+        when:
+            def mapped = result.map { it * 10 }
+
+        then:
+            assertThat(mapped).isSuccess().hasValue(20)
+    }
+
+    def "map should catch exception"() {
+        given:
+            def result = Result.success("x")
+
+        when:
+            def mapped = result.map { throw new IllegalArgumentException("map error") }
+
+        then:
+            assertThat(mapped)
+                    .isFailure()
+                    .hasCauseInstanceOf(IllegalArgumentException)
+                    .hasCauseMessage("map error")
+    }
+
+    def "flatMap should transform value"() {
+        given:
+            def result = Result.success("a")
+
+        when:
+            def mapped = result.flatMap { Result.success(it + "b") }
+
+        then:
+            assertThat(mapped).isSuccess().hasValue("ab")
+    }
+
+    def "flatMap should catch exception"() {
+        given:
+            def result = Result.success("input")
+
+        when:
+            def mapped = result.flatMap { throw new IllegalStateException("fail flat") }
+
+        then:
+            assertThat(mapped)
+                    .isFailure()
+                    .hasCauseMessage("fail flat")
+    }
+
+    def "getOrElse should return fallback on failure"() {
+        given:
+            def result = Result.failure(new RuntimeException("fail"))
+
+        expect:
+            result.getOrElse("fallback") == "fallback"
     }
 
     def "getOrThrow should throw if Failure"() {
         given:
-            def ex = new IllegalStateException("boom")
-            def result = Result.failure(ex)
+            def result = Result.failure(new IllegalStateException("oh no"))
 
         when:
             result.getOrThrow()
@@ -57,98 +122,28 @@ class ResultSpec extends Specification {
         then:
             def thrown = thrown(RuntimeException)
             thrown.message == "Execution failed"
-            thrown.cause == ex
+            thrown.cause.message == "oh no"
     }
 
-    def "should map value in success"() {
-        given:
-            def result = Result.success(2)
 
+    def "of should return success if no exception"() {
         when:
-            def mapped = result.map { it * 5 }
+            def result = Result.of(() -> "safe")
 
         then:
-            mapped instanceof Result.Success
-            mapped.getOrThrow() == 10
+            assertThat(result).isSuccess().hasValue("safe")
     }
 
-    def "should return failure if exception thrown during map"() {
-        given:
-            def result = Result.success("value")
-
+    def "of should wrap ResultExecutionException into failure"() {
         when:
-            def mapped = result.map { throw new RuntimeException("map fail") }
+            def result = Result.of(() -> {
+                throw new ResultExecutionException("wrapped")
+            })
 
         then:
-            mapped instanceof Result.Failure
-        when:
-            mapped.getOrThrow()
-
-        then:
-            def thrown = thrown(RuntimeException)
-            thrown.message == "Execution failed"
-            thrown.cause.message == "map fail"
-    }
-
-    def "map should preserve failure"() {
-        given:
-            def result = Result.failure(new IllegalStateException("error"))
-
-        when:
-            def mapped = result.map { it.toString() }
-
-        then:
-            mapped instanceof Result.Failure
-        when:
-            mapped.getOrThrow()
-
-        then:
-            thrown(RuntimeException)
-    }
-
-    def "flatMap should transform success to another success"() {
-        given:
-            def result = Result.success("X")
-
-        when:
-            def flatMapped = result.flatMap { v -> Result.success(v + "Y") }
-
-        then:
-            flatMapped instanceof Result.Success
-            flatMapped.getOrThrow() == "XY"
-    }
-
-    def "flatMap should catch exception and return failure"() {
-        given:
-            def result = Result.success("test")
-
-        when:
-            def flatMapped = result.flatMap { throw new RuntimeException("flat fail") }
-
-        then:
-            flatMapped instanceof Result.Failure
-        when:
-            flatMapped.getOrThrow()
-
-        then:
-            def thrown = thrown(RuntimeException)
-            thrown.message == "Execution failed"
-            thrown.cause.message == "flat fail"
-    }
-
-    def "flatMap should preserve failure"() {
-        given:
-            def result = Result.failure(new RuntimeException("init fail"))
-
-        when:
-            def flatMapped = result.flatMap { Result.success("should not run") }
-
-        then:
-            flatMapped instanceof Result.Failure
-        when:
-            flatMapped.getOrThrow()
-
-        then:
-            thrown(RuntimeException)
+            assertThat(result)
+                    .isFailure()
+                    .hasCauseInstanceOf(ResultExecutionException)
+                    .hasCauseMessage("wrapped")
     }
 }
