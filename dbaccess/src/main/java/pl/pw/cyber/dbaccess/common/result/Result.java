@@ -19,8 +19,8 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
     static <T> Result<T> of(CheckedSupplier<T> supplier) {
         try {
             return success(supplier.get());
-        } catch (ResultExecutionException e) {
-            return failure(e);
+        } catch (Throwable e) {
+            return failure(e instanceof ResultExecutionException ? e : new ResultExecutionException(e));
         }
     }
 

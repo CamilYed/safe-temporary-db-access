@@ -80,6 +80,17 @@ class ResultSpec extends Specification {
                     .hasCauseMessage("map error")
     }
 
+    def "map should return failure if original is failure"() {
+        given:
+            def result = Result.failure(new IllegalStateException("fail"))
+
+        when:
+            def mapped = result.map { it.toString() }
+
+        then:
+            assertThat(mapped).isFailure().hasCauseMessage("fail")
+    }
+
     def "flatMap should transform value"() {
         given:
             def result = Result.success("a")
@@ -104,12 +115,28 @@ class ResultSpec extends Specification {
                     .hasCauseMessage("fail flat")
     }
 
+    def "flatMap should return failure if original is failure"() {
+        given:
+            def result = Result.failure(new IllegalArgumentException("boom"))
+
+        when:
+            def mapped = result.flatMap { Result.success("doesn't matter") }
+
+        then:
+            assertThat(mapped).isFailure().hasCauseMessage("boom")
+    }
+
     def "getOrElse should return fallback on failure"() {
         given:
             def result = Result.failure(new RuntimeException("fail"))
 
         expect:
             result.getOrElse("fallback") == "fallback"
+    }
+
+    def "getOrElse should return actual value for Success"() {
+        expect:
+            Result.success("real").getOrElse("fallback") == "real"
     }
 
     def "getOrThrow should throw if Failure"() {
@@ -125,6 +152,20 @@ class ResultSpec extends Specification {
             thrown.cause.message == "oh no"
     }
 
+    def "getOrThrow should return value on Success"() {
+        expect:
+            Result.success("value").getOrThrow() == "value"
+    }
+
+    def "isFailure should return true for Failure"() {
+        expect:
+            Result.failure(new RuntimeException()).isFailure()
+    }
+
+    def "isFailure should return false for Success"() {
+        expect:
+            !Result.success("ok").isFailure()
+    }
 
     def "of should return success if no exception"() {
         when:
@@ -134,11 +175,23 @@ class ResultSpec extends Specification {
             assertThat(result).isSuccess().hasValue("safe")
     }
 
-    def "of should wrap ResultExecutionException into failure"() {
+    def "of should wrap generic Throwable in ResultExecutionException"() {
         when:
-            def result = Result.of(() -> {
-                throw new ResultExecutionException("wrapped")
-            })
+            def result = Result.of(() -> { throw new IllegalArgumentException("boom") })
+
+        then:
+            assertThat(result)
+                    .isFailure()
+                    .hasCauseInstanceOf(ResultExecutionException)
+                    .hasCauseSatisfying { ResultExecutionException rex ->
+                        assert rex.cause instanceof IllegalArgumentException
+                        assert rex.cause.message == "boom"
+                    }
+    }
+
+    def "of should return failure when ResultExecutionException thrown directly"() {
+        when:
+            def result = Result.of(() -> { throw new ResultExecutionException("wrapped") })
 
         then:
             assertThat(result)
@@ -157,45 +210,13 @@ class ResultSpec extends Specification {
             ex.cause == cause
     }
 
-    def "isFailure should return true for Failure"() {
-        expect:
-            Result.failure(new RuntimeException()).isFailure()
-    }
-
-    def "isFailure should return false for Success"() {
-        expect:
-            !Result.success("ok").isFailure()
-    }
-
-    def "getOrElse should return actual value for Success"() {
-        expect:
-            Result.success("real").getOrElse("fallback") == "real"
-    }
-
-    def "getOrThrow should return value on Success"() {
-        expect:
-            Result.success("value").getOrThrow() == "value"
-    }
-
-    def "map should return failure if original is failure"() {
+    def "should use ResultExecutionException with cause only"() {
         given:
-            def result = Result.failure(new IllegalStateException("fail"))
+            def cause = new IllegalStateException("inner cause")
+            def ex = new ResultExecutionException(cause)
 
-        when:
-            def mapped = result.map { it.toString() }
-
-        then:
-            assertThat(mapped).isFailure().hasCauseMessage("fail")
-    }
-
-    def "flatMap should return failure if original is failure"() {
-        given:
-            def result = Result.failure(new IllegalArgumentException("boom"))
-
-        when:
-            def mapped = result.flatMap { Result.success("doesn't matter") }
-
-        then:
-            assertThat(mapped).isFailure().hasCauseMessage("boom")
+        expect:
+            ex.cause == cause
+            ex.message == cause.toString()
     }
 }
