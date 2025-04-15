@@ -20,13 +20,13 @@ class SecureUserCredentialsGenerator implements UserCredentialsGenerator {
 
     @Override
     public TemporaryCredentials generate() {
-        String username = generateUsername();
-        String password = generateSecurePassword();
+        var username = generateUsername();
+        var password = generateSecurePassword();
         return new TemporaryCredentials(username, password);
     }
 
     private String generateUsername() {
-        String allowed = LOWER + DIGITS;
+        var allowed = LOWER + DIGITS;
         return generateRandomString(allowed, USERNAME_LENGTH);
     }
 
@@ -47,7 +47,7 @@ class SecureUserCredentialsGenerator implements UserCredentialsGenerator {
     }
 
     private String generateRandomString(String characterSet, int length) {
-        StringBuilder sb = new StringBuilder(length);
+        var sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
             sb.append(randomChar(characterSet));
         }
