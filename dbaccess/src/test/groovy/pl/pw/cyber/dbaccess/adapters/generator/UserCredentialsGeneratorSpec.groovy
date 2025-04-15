@@ -24,7 +24,7 @@ class UserCredentialsGeneratorSpec extends Specification implements EntropyCalcu
                 def password = generator.generate().password()
                 def entropy = shannonEntropy(password)
                 println "Entropy of $password = ${String.format('%.2f', entropy)}"
-                assert entropy >= 50.0 : "Entropy is below 50k.0 for: $password"
+                assert entropy >= 50.0 : "Entropy is below 50.0 for: $password"
             }
     }
 
