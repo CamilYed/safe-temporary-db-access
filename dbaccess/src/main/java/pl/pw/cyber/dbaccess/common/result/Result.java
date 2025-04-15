@@ -5,21 +5,20 @@ import java.util.function.Function;
 public sealed interface Result<T> permits Result.Success, Result.Failure {
 
     record Success<T>(T value) implements Result<T> {}
-
-    record Failure<T>(Throwable exception) implements Result<T> {}
+    record Failure<T>(Exception exception) implements Result<T> {}
 
     static <T> Result<T> success(T value) {
         return new Success<>(value);
     }
 
-    static <T> Result<T> failure(Throwable throwable) {
-        return new Failure<>(throwable);
+    static <T> Result<T> failure(Exception exception) {
+        return new Failure<>(exception);
     }
 
     static <T> Result<T> of(CheckedSupplier<T> supplier) {
         try {
             return success(supplier.get());
-        } catch (Throwable e) {
+        } catch (Exception e) {
             return failure(e);
         }
     }
@@ -37,46 +36,46 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
 
     default T getOrElse(T defaultValue) {
         return switch (this) {
-            case Success<T> s -> s.value();
-            case Failure<T> f -> defaultValue;
+            case Success<T>(T value) -> value;
+            case Failure<T> ignored -> defaultValue;
         };
     }
 
     default T getOrThrow() {
         return switch (this) {
-            case Success<T> s -> s.value();
-            case Failure<T> f -> throw new RuntimeException("Execution failed", f.exception());
+            case Success<T>(T value) -> value;
+            case Failure<T>(Exception exception) -> throw new ResultExecutionException(exception);
         };
     }
 
     default <R> Result<R> map(Function<? super T, ? extends R> mapper) {
         return switch (this) {
-            case Success<T> s -> {
+            case Success<T>(T value) -> {
                 try {
-                    yield success(mapper.apply(s.value()));
-                } catch (Throwable e) {
+                    yield success(mapper.apply(value));
+                } catch (Exception e) {
                     yield failure(e);
                 }
             }
-            case Failure<T> f -> failure(f.exception());
+            case Failure<T>(Exception exception) -> failure(exception);
         };
     }
 
     default <R> Result<R> flatMap(Function<? super T, Result<R>> mapper) {
         return switch (this) {
-            case Success<T> s -> {
+            case Success<T>(T value) -> {
                 try {
-                    yield mapper.apply(s.value());
-                } catch (Throwable e) {
+                    yield mapper.apply(value);
+                } catch (Exception e) {
                     yield failure(e);
                 }
             }
-            case Failure<T> f -> failure(f.exception());
+            case Failure<T>(Exception exception) -> failure(exception);
         };
     }
 
     @FunctionalInterface
     interface CheckedSupplier<T> {
-        T get() throws Throwable;
+        T get() throws Exception;
     }
 }
