@@ -33,14 +33,15 @@ sonar {
 }
 
 project.ext.versions = [
-        groovy             : '4.0.15',
-        spock              : '2.4-M5-groovy-4.0',
-        springBoot         : '3.2.0',
-        postgres           : '42.7.1',
-        nimbus_jose        : '10.1',
-        lombok             : '1.18.30',
-        fluent_validator   : '1.10.0',
-        testcontainers    : '1.19.1'
+        groovy          : '4.0.15',
+        spock           : '2.4-M5-groovy-4.0',
+        springBoot      : '3.2.0',
+        postgres        : '42.7.1',
+        nimbus_jose     : '10.1',
+        lombok          : '1.18.30',
+        fluent_validator: '1.10.0',
+        testcontainers  : '1.21.0',
+        awaitility      : '4.2.0'
 ]
 
 dependencies {
@@ -70,6 +71,7 @@ dependencies {
     integrationTestImplementation "org.springframework.boot:spring-boot-starter-test"
     integrationTestImplementation "org.testcontainers:testcontainers:${versions.testcontainers}"
     integrationTestImplementation "org.testcontainers:postgresql:${versions.testcontainers}"
+    integrationTestImplementation "org.awaitility:awaitility:${versions.awaitility}"
 
 }
 

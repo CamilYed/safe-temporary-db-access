@@ -9,11 +9,13 @@ trait ExtractAccessResponseAbility {
 
     TemporaryAccessGrantedJson extractFromResponse(ResponseEntity<Map> response) {
         def body = response.body
+        assert body.targetDatabase != null
         assert body.username != null
         assert body.password != null
         assert body.expiresAt != null
 
         return new TemporaryAccessGrantedJson(
+                body.targetDatabase as String,
                 body.username as String,
                 body.password as String,
                 Instant.parse(body.expiresAt as String)

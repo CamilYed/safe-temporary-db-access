@@ -22,7 +22,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(Throwable.class)
     public ResponseEntity<Map<String, String>> handleGeneric(HttpServletRequest req, Throwable ex) {
-        log.error("💥 Unhandled throwable at {}: {}", req.getRequestURI(), ex.toString());
+        log.error("💥 Unhandled throwable at {}: {}", req.getRequestURI(), ex.getMessage());
         return ResponseEntity.internalServerError().body(Map.of("error", "Unexpected server error"));
     }
 

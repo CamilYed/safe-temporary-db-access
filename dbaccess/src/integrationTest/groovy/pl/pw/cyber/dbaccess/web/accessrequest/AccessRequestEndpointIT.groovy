@@ -3,8 +3,9 @@ package pl.pw.cyber.dbaccess.web.accessrequest
 import pl.pw.cyber.dbaccess.testing.BaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
-import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseConnectionAbility
-import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSetupAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
 
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
@@ -14,9 +15,10 @@ import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.
 class AccessRequestEndpointIT extends BaseIT implements
         AccessRequestAbility,
         AddExampleUserAbility,
-        DatabaseSetupAbility,
-        DatabaseConnectionAbility,
-        DatabaseResultAssertion {
+        RunOperationOnDatabaseAbility,
+        DatabaseResultAssertion,
+        ExtractAccessResponseAbility,
+        DatabaseSelectAbility {
 
     def setup() {
         thereIsUser("user")
@@ -27,7 +29,7 @@ class AccessRequestEndpointIT extends BaseIT implements
     }
 
     def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
-        given: "Running database with a sample 'orders' table"
+        given:
             resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
 
         and:
@@ -43,9 +45,8 @@ class AccessRequestEndpointIT extends BaseIT implements
         when:
             def response = accessRequest(
                     anAccessRequest()
-                            .withPermissionLevel("READ_ONLY")
-                            .withDurationMinutes(20)
                             .withTargetDatabase("test_db")
+                            .withPermissionLevel("READ_ONLY")
             )
 
         then:
@@ -55,17 +56,35 @@ class AccessRequestEndpointIT extends BaseIT implements
             var credentials = extractFromResponse(response)
             connectionToDatabaseSucceeds(credentials)
 
-        and: "Can SELECT rows from 'orders' table"
+        and:
             def rows = selectFromOrders(credentials)
             assertThatRows(rows)
                     .hasNumberOfRows(2)
                     .hasRowWithId(1) { hasAmount(100.50G) }
                     .hasRowWithId(2) { hasAmount(200.75G) }
 
-        and: "Cannot perform forbidden operations (INSERT, UPDATE, DELETE, DROP)"
-            updateOperationIsNotAvailable(credentials)
-            insertOperationIsNotAvailable(credentials)
-            deleteOperationIsNotAvailable(credentials)
-            dropOperationIsNotAvailable(credentials)
+        and:
+            updateShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+
+        and:
+            insertShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+
+        and:
+            deleteShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+
+        and:
+            dropShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
     }
 }

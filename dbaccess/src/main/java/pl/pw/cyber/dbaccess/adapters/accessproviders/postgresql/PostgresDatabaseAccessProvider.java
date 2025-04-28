@@ -1,6 +1,5 @@
 package pl.pw.cyber.dbaccess.adapters.accessproviders.postgresql;
 
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import pl.pw.cyber.dbaccess.domain.CreateTemporaryUserRequest;
@@ -40,52 +39,58 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
     }
 
     private void createUser(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
-        var params = new MapSqlParameterSource()
-          .addValue("username", request.username())
-          .addValue("password", request.password());
+        String username = "\"" + request.username() + "\"";
+        String password = "'" + request.password().replace("'", "''") + "'";
 
-        jdbc.update("""
-                CREATE ROLE :username WITH LOGIN PASSWORD :password
-                """, params);
+        String sql = String.format(
+          "CREATE ROLE %s WITH LOGIN PASSWORD %s",
+          username,
+          password
+        );
+
+        jdbc.getJdbcTemplate().execute(sql);
     }
 
     private void grantPrivileges(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
-        var params = new MapSqlParameterSource()
-          .addValue("username", request.username());
+        String username = "\"" + request.username() + "\"";
+        String database = "\"" + request.targetDatabase() + "\"";
 
-        jdbc.update("""
-                GRANT CONNECT ON DATABASE :database TO :username
-                """, params.addValue("database", request.targetDatabase()));
+        jdbc.getJdbcTemplate().execute(
+          String.format("GRANT CONNECT ON DATABASE %s TO %s", database, username)
+        );
 
-        jdbc.update("""
-                GRANT USAGE ON SCHEMA public TO :username
-                """, params);
+        jdbc.getJdbcTemplate().execute(
+          String.format("GRANT USAGE ON SCHEMA public TO %s", username)
+        );
 
-        var grantSql = switch (request.permissionLevel()) {
-            case READ_ONLY -> "GRANT SELECT ON ALL TABLES IN SCHEMA public TO :username";
-            case READ_WRITE -> "GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO :username";
-            case DELETE -> "GRANT SELECT, DELETE ON ALL TABLES IN SCHEMA public TO :username";
-        };
-        jdbc.update(grantSql, params);
-    }
-
-    private void configureDefaultPrivileges(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
-        var privileges = switch (request.permissionLevel()) {
+        String tablePrivileges = switch (request.permissionLevel()) {
             case READ_ONLY -> "SELECT";
             case READ_WRITE -> "SELECT, INSERT, UPDATE";
             case DELETE -> "SELECT, DELETE";
         };
 
-        var params = new MapSqlParameterSource()
-          .addValue("username", request.username());
+        jdbc.getJdbcTemplate().execute(
+          String.format("GRANT %s ON ALL TABLES IN SCHEMA public TO %s", tablePrivileges, username)
+        );
+    }
+
+    private void configureDefaultPrivileges(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
+        String username = "\"" + request.username() + "\"";
+
+        String privileges = switch (request.permissionLevel()) {
+            case READ_ONLY -> "SELECT";
+            case READ_WRITE -> "SELECT, INSERT, UPDATE";
+            case DELETE -> "SELECT, DELETE";
+        };
 
         String sql = """
-                ALTER DEFAULT PRIVILEGES IN SCHEMA public
-                GRANT %s ON TABLES TO :username
-                """.formatted(privileges);
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public
+        GRANT %s ON TABLES TO %s
+        """.formatted(privileges, username);
 
-        jdbc.update(sql, params);
+        jdbc.getJdbcTemplate().execute(sql);
     }
+
 
     @Override
     public void revokeTemporaryUser(String username, String targetDatabase) {

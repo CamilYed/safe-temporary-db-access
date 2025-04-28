@@ -9,6 +9,10 @@ import pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder
 import pl.pw.cyber.dbaccess.testing.dsl.builders.TableDefinitionBuilder
 import pl.pw.cyber.dbaccess.testing.dsl.fakes.FakeDatabaseConfigurationProvider
 
+import java.util.concurrent.TimeUnit
+
+import static org.awaitility.Awaitility.await
+
 trait DatabaseSetupAbility {
 
     @Autowired
@@ -55,7 +59,10 @@ trait DatabaseSetupAbility {
         def container = startedContainers.get(databaseName)
         assert container != null : "No running container for database: $databaseName"
 
-        def builder = TableDefinitionBuilder.table(closure)
+        def builder = new TableDefinitionBuilder()
+        closure.delegate = builder
+        closure.resolveStrategy = Closure.DELEGATE_FIRST
+        builder = closure.call()
 
         def jdbc = new JdbcTemplate(new DriverManagerDataSource(
                 container.jdbcUrl,
@@ -64,12 +71,27 @@ trait DatabaseSetupAbility {
         ))
 
         jdbc.execute("CREATE TABLE public.${builder.tableName} (${builder.columns.join(', ')})")
+        awaitTableVisible(jdbc, "public", builder.tableName)
 
         builder.rows.each { row ->
             def columns = row.keySet().join(', ')
             def values = row.values().collect { "'${it}'" }.join(', ')
             jdbc.execute("INSERT INTO public.${builder.tableName} (${columns}) VALUES (${values})")
         }
+    }
+
+    private void awaitTableVisible(JdbcTemplate jdbc, String schemaName, String tableName) {
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .untilAsserted {
+                    Integer count = jdbc.queryForObject(
+                            "SELECT COUNT(*) FROM pg_tables WHERE schemaname = ? AND tablename = ?",
+                            [schemaName, tableName] as Object[],
+                            Integer
+                    )
+                    assert count == 1 : "Table '${schemaName}.${tableName}' not visible yet in pg_tables!"
+                }
     }
 
     ResolvedDatabase databaseFor(String dbName) {

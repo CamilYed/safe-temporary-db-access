@@ -29,6 +29,7 @@ public class TemporaryDbAccessService {
                 .username(credentials.username())
                 .password(credentials.password())
                 .permissionLevel(command.permissionLevel())
+                .targetDatabase(command.targetDatabase())
                 .build()
             );
 
