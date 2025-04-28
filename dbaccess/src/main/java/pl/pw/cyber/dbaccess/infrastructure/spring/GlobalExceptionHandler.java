@@ -2,9 +2,11 @@ package pl.pw.cyber.dbaccess.infrastructure.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException;
 
 import java.util.Map;
 
@@ -23,4 +25,25 @@ class GlobalExceptionHandler {
         log.error("💥 Unhandled throwable at {}: {}", req.getRequestURI(), ex.toString());
         return ResponseEntity.internalServerError().body(Map.of("error", "Unexpected server error"));
     }
+
+    @ExceptionHandler(ResultExecutionException.class)
+    public ResponseEntity<ProblemDetail> handleResultExecution(ResultExecutionException ex, HttpServletRequest req) {
+        log.error("Result execution failed at {}: {}", req.getRequestURI(), ex.getCause().toString());
+
+        var pd = ProblemDetail.forStatus(500);
+        pd.setTitle("Internal Server Error");
+        pd.setDetail("Unexpected processing error");
+
+        return ResponseEntity.internalServerError().body(pd);
+    }
+    /**
+      Throwable cause = ex.getCause();
+      log.error("Result execution failed at {}: {}", req.getRequestURI(), cause.toString());
+
+      var pd = ProblemDetail.forStatus(cause instanceof DomainException ? 422 : 500);
+      pd.setTitle("Request failed");
+      pd.setDetail("Something went wrong while processing the request");
+
+      return ResponseEntity.status(pd.getStatus()).body(pd);
+     */
 }

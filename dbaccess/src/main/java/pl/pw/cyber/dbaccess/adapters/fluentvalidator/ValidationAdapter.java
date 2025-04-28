@@ -5,6 +5,7 @@ import br.com.fluentvalidator.context.Error;
 import pl.pw.cyber.dbaccess.web.validation.ValidationResult;
 import pl.pw.cyber.dbaccess.web.validation.Validator;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 class ValidationAdapter<T> implements Validator<T> {
@@ -18,8 +19,13 @@ class ValidationAdapter<T> implements Validator<T> {
         var result = validator.validate(value);
         return result.isValid()
           ? ValidationResult.VALID
-          : new ValidationResult.Invalid(result.getErrors().stream()
+          : new ValidationResult.Invalid(mapToErrors(result)
+        );
+    }
+
+    private static List<String> mapToErrors(br.com.fluentvalidator.context.ValidationResult result) {
+        return result.getErrors().stream()
           .map(Error::getMessage)
-          .collect(Collectors.toList()));
+          .collect(Collectors.toList());
     }
 }

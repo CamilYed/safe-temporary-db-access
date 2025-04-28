@@ -39,7 +39,8 @@ project.ext.versions = [
         postgres           : '42.7.1',
         nimbus_jose        : '10.1',
         lombok             : '1.18.30',
-        fluent_validator   : '1.10.0'
+        fluent_validator   : '1.10.0',
+        testcontainers    : '1.19.1'
 ]
 
 dependencies {
@@ -67,6 +68,9 @@ dependencies {
     integrationTestImplementation "org.spockframework:spock-core:${versions.spock}"
     integrationTestImplementation "org.spockframework:spock-spring:${versions.spock}"
     integrationTestImplementation "org.springframework.boot:spring-boot-starter-test"
+    integrationTestImplementation "org.testcontainers:testcontainers:${versions.testcontainers}"
+    integrationTestImplementation "org.testcontainers:postgresql:${versions.testcontainers}"
+
 }
 
 test {
