@@ -1,79 +1,3 @@
-//package pl.pw.cyber.dbaccess.testing.dsl.abilities
-//
-//import org.postgresql.util.PSQLException
-//import pl.pw.cyber.dbaccess.web.accessrequest.TemporaryAccessGrantedJson
-//
-//trait RunOperationOnDatabaseAbility extends DatabaseConnectionAbility {
-//
-//    void connectionToDatabaseSucceeds(TemporaryAccessGrantedJson credentials) {
-//        def db = databaseFor(credentials.targetDatabase())
-//        def jdbc = connect(credentials.username(), credentials.password(), db.url())
-//
-//        jdbc.queryForObject("SELECT 1", Integer)
-//    }
-//
-//    void updateOperationIsNotAvailable(TemporaryAccessGrantedJson credentials) {
-//        def db = databaseFor(credentials.targetDatabase())
-//        def jdbc = connect(credentials.username(), credentials.password(), db.url())
-//
-//        shouldFailWithPermissionError {
-//            jdbc.update("UPDATE public.orders SET amount = 100 WHERE id = 1")
-//        }
-//    }
-//
-//    void insertOperationIsNotAvailable(TemporaryAccessGrantedJson credentials) {
-//        def db = databaseFor(credentials.targetDatabase())
-//        def jdbc = connect(credentials.username(), credentials.password(), db.url())
-//
-//        shouldFailWithPermissionError {
-//            jdbc.update("INSERT INTO public.orders (id, amount) VALUES (999, 100)")
-//        }
-//    }
-//
-//    void deleteOperationIsNotAvailable(TemporaryAccessGrantedJson credentials) {
-//        def db = databaseFor(credentials.targetDatabase())
-//        def jdbc = connect(credentials.username(), credentials.password(), db.url())
-//
-//        shouldFailWithPermissionError {
-//            jdbc.update("DELETE FROM public.orders WHERE id = 1")
-//        }
-//    }
-//
-//    void dropOperationIsNotAvailable(TemporaryAccessGrantedJson credentials) {
-//        def db = databaseFor(credentials.targetDatabase())
-//        def jdbc = connect(credentials.username(), credentials.password(), db.url())
-//
-//        shouldFailWithOwnerError {
-//            jdbc.execute("DROP TABLE public.orders")
-//        }
-//    }
-//
-//    private void shouldFailWithPermissionError(Closure code) {
-//        try {
-//            code.call()
-//            assert false: "Expected permission exception but code succeeded!"
-//        } catch (Exception e) {
-//            assert e.getCause() != null: "Expected cause is not null"
-//            assert e.getCause() instanceof PSQLException
-//            PSQLException error = (PSQLException) e.getCause()
-//            assert error.getSQLState() == "42501" : "Expected 42501 sql error code"
-//            assert error.message == "ERROR: permission denied for table orders"
-//        }
-//    }
-//
-//    private void shouldFailWithOwnerError(Closure code) {
-//        try {
-//            code.call()
-//            assert false: "Expected permission exception but code succeeded!"
-//        } catch (Exception e) {
-//            assert e.getCause() != null: "Expected cause is not null"
-//            assert e.getCause() instanceof PSQLException
-//            PSQLException error = (PSQLException) e.getCause()
-//            assert error.getSQLState() == "42501" : "Expected 42501 sql error code"
-//            assert error.message == "ERROR: must be owner of table orders"
-//        }
-//    }
-//}
 package pl.pw.cyber.dbaccess.testing.dsl.abilities
 
 import org.postgresql.util.PSQLException
@@ -111,6 +35,24 @@ trait RunOperationOnDatabaseAbility extends DatabaseConnectionAbility {
         }
     }
 
+    void updateShouldSucceed(TemporaryAccessGrantedJson credentials) {
+        def db = databaseFor(credentials.targetDatabase())
+        def jdbc = connect(credentials.username(), credentials.password(), db.url())
+        jdbc.update("UPDATE public.orders SET amount = 999.99 WHERE id = 1")
+    }
+
+    void insertShouldSucceed(TemporaryAccessGrantedJson credentials) {
+        def db = databaseFor(credentials.targetDatabase())
+        def jdbc = connect(credentials.username(), credentials.password(), db.url())
+        jdbc.update("INSERT INTO public.orders (amount) VALUES (333.33)")
+    }
+
+    void deleteShouldSucceed(TemporaryAccessGrantedJson credentials) {
+        def db = databaseFor(credentials.targetDatabase())
+        def jdbc = connect(credentials.username(), credentials.password(), db.url())
+        jdbc.update("DELETE FROM public.orders WHERE id = 1")
+    }
+
     private void performForbiddenOperation(Closure config, boolean ownerCheck = false, Closure<String> queryBuilder) {
         def builder = new ForbiddenOperationBuilder()
         config.delegate = builder
@@ -121,37 +63,37 @@ trait RunOperationOnDatabaseAbility extends DatabaseConnectionAbility {
         def jdbc = connect(builder.credentials.username(), builder.credentials.password(), db.url())
 
         if (ownerCheck) {
-            shouldFailWithOwnerError {
+            shouldFailWithOwnerError(builder.tableName) {
                 jdbc.execute(queryBuilder(builder))
             }
         } else {
-            shouldFailWithPermissionError {
+            shouldFailWithPermissionError(builder.tableName) {
                 jdbc.execute(queryBuilder(builder))
             }
         }
     }
 
-    private void shouldFailWithPermissionError(Closure code) {
+    private void shouldFailWithPermissionError(String tableName, Closure code) {
         try {
             code.call()
             assert false: "Expected permission error but operation succeeded!"
         } catch (Exception e) {
-            assert e.getCause() instanceof PSQLException
+            assert e.getCause() instanceof PSQLException : "Expected cause to be PSQLException but was ${e.getCause()?.class?.simpleName}"
             PSQLException error = (PSQLException) e.getCause()
             assert error.getSQLState() == "42501" : "Expected SQLState 42501 for permission denied"
-            assert error.message.contains("permission denied") : "Expected permission denied error, but got: ${error.message}"
+            assert error.message == "ERROR: permission denied for table ${tableName}" : "Expected permission denied for table ${tableName}, but got: '${error.message}'"
         }
     }
 
-    private void shouldFailWithOwnerError(Closure code) {
+    private void shouldFailWithOwnerError(String tableName, Closure code) {
         try {
             code.call()
             assert false: "Expected owner error but operation succeeded!"
         } catch (Exception e) {
-            assert e.getCause() instanceof PSQLException
+            assert e.getCause() instanceof PSQLException : "Expected cause to be PSQLException but was ${e.getCause()?.class?.simpleName}"
             PSQLException error = (PSQLException) e.getCause()
             assert error.getSQLState() == "42501" : "Expected SQLState 42501 for owner error"
-            assert error.message.contains("must be owner") : "Expected must be owner error, but got: ${error.message}"
+            assert error.message == "ERROR: must be owner of table ${tableName}" : "Expected must be owner of table ${tableName}, but got: '${error.message}'"
         }
     }
 
@@ -167,5 +109,4 @@ trait RunOperationOnDatabaseAbility extends DatabaseConnectionAbility {
             this.credentials = credentials
         }
     }
-
 }

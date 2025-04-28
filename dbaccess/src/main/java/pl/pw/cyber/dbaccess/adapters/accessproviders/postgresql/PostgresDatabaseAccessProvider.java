@@ -72,6 +72,10 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
         jdbc.getJdbcTemplate().execute(
           String.format("GRANT %s ON ALL TABLES IN SCHEMA public TO %s", tablePrivileges, username)
         );
+
+        jdbc.getJdbcTemplate().execute(
+          String.format("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO %s", username)
+        );
     }
 
     private void configureDefaultPrivileges(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {

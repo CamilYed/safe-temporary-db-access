@@ -87,4 +87,108 @@ class AccessRequestEndpointIT extends BaseIT implements
                 usingCredentials(credentials)
             }
     }
+
+    def "should create READ_WRITE user with correct privileges in PostgreSQL"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+
+        and:
+            publicSchemaOfDatabaseHasTable("test_db") {
+                table("orders") {
+                    withColumn "id SERIAL PRIMARY KEY"
+                    withColumn "amount DECIMAL(10,2)"
+                    withRow amount: 100.50
+                    withRow amount: 200.75
+                }
+            }
+
+        when:
+            def response = accessRequest(
+                    anAccessRequest()
+                            .withTargetDatabase("test_db")
+                            .withPermissionLevel("READ_WRITE")
+            )
+
+        then:
+            assertThat(response).isOK()
+
+        and:
+            var credentials = extractFromResponse(response)
+            connectionToDatabaseSucceeds(credentials)
+
+        and:
+            def rows = selectFromOrders(credentials)
+            assertThatRows(rows)
+                    .hasNumberOfRows(2)
+                    .hasRowWithId(1) { hasAmount(100.50G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+
+        and: "Should allow INSERT and UPDATE but forbid DELETE and DROP"
+            updateShouldSucceed(credentials)
+            insertShouldSucceed(credentials)
+
+            deleteShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+
+            dropShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+    }
+
+    def "should create DELETE user with correct privileges in PostgreSQL"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+
+        and:
+            publicSchemaOfDatabaseHasTable("test_db") {
+                table("orders") {
+                    withColumn "id SERIAL PRIMARY KEY"
+                    withColumn "amount DECIMAL(10,2)"
+                    withRow amount: 100.50
+                    withRow amount: 200.75
+                }
+            }
+
+        when:
+            def response = accessRequest(
+                    anAccessRequest()
+                            .withTargetDatabase("test_db")
+                            .withPermissionLevel("DELETE")
+            )
+
+        then:
+            assertThat(response).isOK()
+
+        and:
+            var credentials = extractFromResponse(response)
+            connectionToDatabaseSucceeds(credentials)
+
+        and:
+            def rows = selectFromOrders(credentials)
+            assertThatRows(rows)
+                    .hasNumberOfRows(2)
+                    .hasRowWithId(1) { hasAmount(100.50G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+
+        and: "Should allow DELETE but forbid INSERT, UPDATE, and DROP"
+            deleteShouldSucceed(credentials)
+
+            updateShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+
+            insertShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+
+            dropShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials(credentials)
+            }
+    }
 }
