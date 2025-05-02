@@ -1,9 +1,8 @@
 package pl.pw.cyber.dbaccess.adapters.config;
 
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException;
 import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider;
 import pl.pw.cyber.dbaccess.domain.ResolvedDatabase;
-
-import java.util.Optional;
 
 class YamlDatabaseConfigurationProvider implements DatabaseConfigurationProvider {
 
@@ -23,21 +22,30 @@ class YamlDatabaseConfigurationProvider implements DatabaseConfigurationProvider
 
     @Override
     public boolean isResolvable(String databaseName) {
-        return resolve(databaseName).isPresent();
+        try {
+            resolve(databaseName);
+            return true;
+        } catch (ResultExecutionException e) {
+            return false;
+        }
     }
 
     @Override
-    public Optional<ResolvedDatabase> resolve(String databaseName) {
+    public ResolvedDatabase resolve(String databaseName) {
         var def = properties.databases().get(databaseName);
-        if (def == null) return Optional.empty();
+        if (def == null) {
+            throw new ResultExecutionException.DatabaseNotResolvable("Database definition not found for: " + databaseName);
+        }
 
         String prefix = def.envPrefix();
         String url = env.getEnv(prefix + DB_URL_ENV_SUFFIX);
         String username = env.getEnv(prefix + DB_USERNAME_ENV_SUFFIX);
         String password = env.getEnv(prefix + DB_PASSWORD_ENV_SUFFIX);
 
-        if (url == null || username == null || password == null) return Optional.empty();
+        if (url == null || username == null || password == null) {
+            throw new ResultExecutionException.DatabaseNotResolvable("Missing DB connection details for: " + databaseName);
+        }
 
-        return Optional.of(new ResolvedDatabase(databaseName, url, username, password));
+        return new ResolvedDatabase(databaseName, url, username, password);
     }
 }

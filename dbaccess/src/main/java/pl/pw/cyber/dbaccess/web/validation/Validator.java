@@ -6,7 +6,7 @@ public interface Validator<T> {
 
     ValidationResult validate(T object);
 
-    default <R> R validateAndMap(T object, Function<ValidationResult, R> mapper) {
-        return mapper.apply(validate(object));
+    static <R> R map(ValidationResult result, Function<ValidationResult, R> mapper) {
+       return mapper.apply(result);
     }
 }

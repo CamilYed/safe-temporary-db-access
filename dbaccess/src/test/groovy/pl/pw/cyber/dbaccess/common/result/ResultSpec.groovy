@@ -147,8 +147,9 @@ class ResultSpec extends Specification {
             result.getOrThrow()
 
         then:
-            def thrown = thrown(RuntimeException)
-            thrown.message == "Execution failed"
+            def thrown = thrown(ResultExecutionException)
+            thrown.message == "java.lang.IllegalStateException: oh no"
+            thrown.cause instanceof IllegalStateException
             thrown.cause.message == "oh no"
     }
 
@@ -182,10 +183,9 @@ class ResultSpec extends Specification {
         then:
             assertThat(result)
                     .isFailure()
-                    .hasCauseInstanceOf(ResultExecutionException)
-                    .hasCauseSatisfying { ResultExecutionException rex ->
-                        assert rex.cause instanceof IllegalArgumentException
-                        assert rex.cause.message == "boom"
+                    .hasCauseInstanceOf(IllegalArgumentException)
+                    .hasCauseSatisfying { IllegalArgumentException rex ->
+                        assert rex.message == "boom"
                     }
     }
 
@@ -218,5 +218,33 @@ class ResultSpec extends Specification {
         expect:
             ex.cause == cause
             ex.message == cause.toString()
+    }
+
+    def "map should catch ResultExecutionException specifically"() {
+        given:
+            def result = Result.success("x")
+
+        when:
+            def mapped = result.map { throw new ResultExecutionException("explicit") }
+
+        then:
+            assertThat(mapped)
+                    .isFailure()
+                    .hasCauseInstanceOf(ResultExecutionException)
+                    .hasCauseMessage("explicit")
+    }
+
+    def "failure(Throwable) should not wrap ResultExecutionException again"() {
+        given:
+            def exception = new ResultExecutionException("already wrapped")
+
+        when:
+            def result = Result.failure((Throwable) exception)
+
+        then:
+            assertThat(result)
+                    .isFailure()
+                    .hasCauseInstanceOf(ResultExecutionException)
+                    .hasCauseMessage("already wrapped")
     }
 }

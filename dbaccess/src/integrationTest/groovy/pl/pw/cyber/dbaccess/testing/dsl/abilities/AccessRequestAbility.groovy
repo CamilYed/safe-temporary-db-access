@@ -9,9 +9,14 @@ import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder
 
 trait AccessRequestAbility implements MakeRequestAbility {
 
-    ResponseEntity<Map> accessRequest(String user = "user", AccessRequestJsonBuilder request) {
+    ResponseEntity<Map> accessRequestBy(String user, Closure<AccessRequestJsonBuilder> config) {
+        AccessRequestJsonBuilder requestBuilder = config.call()
+        return accessRequest(requestBuilder, user)
+    }
+
+    ResponseEntity<Map> accessRequest(AccessRequestJsonBuilder request, String requestedBy = "user") {
         return accessRequestBuilder()
-                .withHeader("Authorization", "Bearer ${validToken(user)}")
+                .withHeader("Authorization", "Bearer ${validToken(requestedBy)}")
                 .withBody(request.toMap())
                 .makeRequest()
     }

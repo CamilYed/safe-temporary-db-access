@@ -1,6 +1,6 @@
 package pl.pw.cyber.dbaccess.common.result;
 
-public class ResultExecutionException extends RuntimeException {
+public sealed class ResultExecutionException extends RuntimeException {
 
     public ResultExecutionException(String message) {
         super(message);
@@ -13,4 +13,16 @@ public class ResultExecutionException extends RuntimeException {
     public ResultExecutionException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    public static final class DatabaseNotResolvable extends ResultExecutionException {
+        public DatabaseNotResolvable(String message) {
+            super(message);
+        }
+    }
+    public static final class DatabaseUnexpectedError extends ResultExecutionException {
+        public DatabaseUnexpectedError(String message) {
+            super(message);
+        }
+    }
 }
+

@@ -1,37 +1,256 @@
 package pl.pw.cyber.dbaccess.web.accessrequest
 
-import pl.pw.cyber.dbaccess.testing.BaseIT
+
+import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
-import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSetupAbility
-import spock.lang.Ignore
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
+import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
 
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
 
-class AccessRequestEndpointIT extends BaseIT implements
+class AccessRequestEndpointIT extends MongoBaseIT implements
         AccessRequestAbility,
         AddExampleUserAbility,
-        DatabaseSetupAbility {
+        RunOperationOnDatabaseAbility,
+        DatabaseResultAssertion,
+        ExtractAccessResponseAbility,
+        DatabaseSelectAbility,
+        MongoAuditAssertionAbility {
 
     def setup() {
         thereIsUser("user")
-        thereIs(aResolvableDatabase().withName("test_db"))
     }
 
-    @Ignore
-    def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
+    def cleanup() {
+        stopDatabase()
+    }
+
+    def "should not create temporary user when database is resolvable but not running"() {
+        given:
+            thereIs(aResolvableDatabase().withName("test_db"))
+
         when:
             def response = accessRequest(
                     anAccessRequest()
-                            .withPermissionLevel("READ_ONLY")
-                            .withDurationMinutes(20)
                             .withTargetDatabase("test_db")
+
+            )
+
+        then:
+            assertThat(response).hasStatusCode(500)
+    }
+
+    def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+        and:
+            publicSchemaOfDatabaseHasTable("test_db") {
+                table("orders") {
+                    withColumn "id SERIAL PRIMARY KEY"
+                    withColumn "amount DECIMAL(10,2)"
+                    withRow amount: 100.50
+                    withRow amount: 200.75
+                }
+            }
+
+        when:
+            def response = accessRequest(
+                    anAccessRequest()
+                            .withTargetDatabase("test_db")
+                            .withPermissionLevel("READ_ONLY")
             )
 
         then:
             assertThat(response).isOK()
+        and:
+            var credentials = extractFromResponse(response)
+            connectionToDatabaseSucceeds(credentials)
+        and:
+            def rows = selectFromOrders(credentials)
+            assertThatRows(rows)
+                    .hasNumberOfRows(2)
+                    .hasRowWithId(1) { hasAmount(100.50G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+        and:
+            updateShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+        and:
+            insertShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+        and:
+            deleteShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+        and:
+            dropShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+    }
 
+    def "should create READ_WRITE user with correct privileges in PostgreSQL"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+        and:
+            publicSchemaOfDatabaseHasTable("test_db") {
+                table("orders") {
+                    withColumn "id SERIAL PRIMARY KEY"
+                    withColumn "amount DECIMAL(10,2)"
+                    withRow amount: 100.50
+                    withRow amount: 200.75
+                }
+            }
+
+        when:
+            def response = accessRequest(
+                    anAccessRequest()
+                            .withTargetDatabase("test_db")
+                            .withPermissionLevel("READ_WRITE")
+            )
+
+        then:
+            assertThat(response).isOK()
+        and:
+            var credentials = extractFromResponse(response)
+            connectionToDatabaseSucceeds(credentials)
+        and:
+            def initialRows = selectFromOrders(credentials)
+            assertThatRows(initialRows)
+                    .hasNumberOfRows(2)
+                    .hasRowWithId(1) { hasAmount(100.50G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+        and:
+            updateShouldSucceedFor {
+                table "orders"
+                usingCredentials credentials
+                set amount: 999.99G
+                where id: 1
+            }
+        and:
+            insertShouldSucceedFor {
+                table "orders"
+                usingCredentials credentials
+                values amount: 333.33G
+            }
+        then:
+            def modifiedRows = selectFromOrders(credentials)
+            assertThatRows(modifiedRows)
+                    .hasNumberOfRows(3)
+                    .hasRowWithId(1) { hasAmount(999.99G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+                    .hasRowWithId(3) { hasAmount(333.33G) }
+        and:
+            deleteShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+        and:
+            dropShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+    }
+
+    def "should create DELETE user with correct privileges in PostgreSQL"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+        and:
+            publicSchemaOfDatabaseHasTable("test_db") {
+                table("orders") {
+                    withColumn "id SERIAL PRIMARY KEY"
+                    withColumn "amount DECIMAL(10,2)"
+                    withRow amount: 100.50
+                    withRow amount: 200.75
+                }
+            }
+
+        when:
+            def response = accessRequest(
+                    anAccessRequest()
+                            .withTargetDatabase("test_db")
+                            .withPermissionLevel("DELETE")
+            )
+
+        then:
+            assertThat(response).isOK()
+        and:
+            var credentials = extractFromResponse(response)
+            connectionToDatabaseSucceeds(credentials)
+        and:
+            def initialRows = selectFromOrders(credentials)
+            assertThatRows(initialRows)
+                    .hasNumberOfRows(2)
+                    .hasRowWithId(1) { hasAmount(100.50G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+        and:
+            deleteShouldSucceedFor {
+                table "orders"
+                usingCredentials credentials
+                where id: 1
+            }
+        then:
+            def rowsAfterDelete = selectFromOrders(credentials)
+            assertThatRows(rowsAfterDelete)
+                    .hasNumberOfRows(1)
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+        and:
+            updateShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+        and:
+            insertShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+        and:
+            dropShouldBeForbiddenFor {
+                table "orders"
+                usingCredentials credentials
+            }
+    }
+
+    def "should create audit log entry upon successful access request"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("audit_test_db"))
+        and:
+            theAuditLog { shouldBeEmpty() }
+        and:
+            currentTimeIs("2025-05-02T12:00:00Z")
+
+        when:
+            def response = accessRequestBy("user") {
+                anAccessRequest()
+                        .withTargetDatabase("audit_test_db")
+                        .withPermissionLevel("READ_ONLY")
+                        .withDurationMinutes(60)
+            }
+        then:
+            assertThat(response).isOK()
+            def credentials = extractFromResponse(response)
+
+        and:
+            theAuditLog {
+                shouldHaveSingleEntry {
+                    requestedBy("user")
+                    hasGrantedForUser(credentials.username())
+                    hasGrantedForDatabase("audit_test_db")
+                    hasPermission("READ_ONLY")
+                    hasGrantedAt("2025-05-02T12:00:00Z")
+                    hasExpiresAt("2025-05-02T13:00:00Z")
+                    hasNotRevokedStatus()
+                }
+            }
     }
 }

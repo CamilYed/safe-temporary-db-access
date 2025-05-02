@@ -1,6 +1,6 @@
 package pl.pw.cyber.dbaccess.adapters.config
 
-
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException
 import pl.pw.cyber.dbaccess.domain.ResolvedDatabase
 import pl.pw.cyber.dbaccess.testing.dsl.builders.EnvVariableDatabaseBuilder
 import spock.lang.Specification
@@ -43,11 +43,10 @@ class YamlDatabaseConfigurationProviderSpec extends Specification {
             def provider = providerFor("test_db", readerFor(db))
 
         when:
-            Optional<ResolvedDatabase> result = provider.resolve("test_db")
+            ResolvedDatabase result = provider.resolve("test_db")
 
         then:
-            result.isPresent()
-            with(result.get()) {
+            with(result) {
                 name() == "test_db"
                 url() == db.url
                 username() == db.username
@@ -55,42 +54,53 @@ class YamlDatabaseConfigurationProviderSpec extends Specification {
             }
     }
 
-    def "should not resolve database if missing from properties"() {
+    def "should throw if database is missing from properties"() {
         given:
             def provider = new YamlDatabaseConfigurationProvider(
                     new DatabaseAccessProperties(Map.of()), new FakeEnvironmentReader()
             )
 
-        expect:
-            provider.resolve("missing").isEmpty()
-            !provider.isResolvable("missing")
+        when:
+            provider.resolve("missing")
+
+        then:
+            thrown(ResultExecutionException.DatabaseNotResolvable)
     }
 
-    def "should not resolve if DB_URL is missing"() {
+    def "should throw if DB_URL is missing"() {
         given:
             def db = aDatabaseEnv().withName("test_db").withUrl(null)
             def provider = providerFor("test_db", readerFor(db))
 
-        expect:
-            provider.resolve("test_db").isEmpty()
+        when:
+            provider.resolve("test_db")
+
+        then:
+            thrown(ResultExecutionException.DatabaseNotResolvable)
     }
 
-    def "should not resolve if DB_USERNAME is missing"() {
+    def "should throw if DB_USERNAME is missing"() {
         given:
             def db = aDatabaseEnv().withName("test_db").withUsername(null)
             def provider = providerFor("test_db", readerFor(db))
 
-        expect:
-            provider.resolve("test_db").isEmpty()
+        when:
+            provider.resolve("test_db")
+
+        then:
+            thrown(ResultExecutionException.DatabaseNotResolvable)
     }
 
-    def "should not resolve if DB_PASSWORD is missing"() {
+    def "should throw if DB_PASSWORD is missing"() {
         given:
             def db = aDatabaseEnv().withName("test_db").withPassword(null)
             def provider = providerFor("test_db", readerFor(db))
 
-        expect:
-            provider.resolve("test_db").isEmpty()
+        when:
+            provider.resolve("test_db")
+
+        then:
+            thrown(ResultExecutionException.DatabaseNotResolvable)
     }
 
     def "isResolvable returns true when all env vars exist"() {

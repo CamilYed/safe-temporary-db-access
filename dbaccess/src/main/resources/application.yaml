@@ -10,6 +10,9 @@ spring:
     username: ${DB_USER_NAME}:test
     password: ${DB_PASSWORD}:db_password
     driver-class-name: org.postgresql.Driver
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/safe_access_audit}
 
 jwt:
   public-key: ${PUBLIC_KEY_LOCATION}:""

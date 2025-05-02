@@ -1,6 +1,7 @@
 package pl.pw.cyber.dbaccess.testing.dsl.assertions
 
 import pl.pw.cyber.dbaccess.common.result.Result
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException
 
 class ResultAssertion<T> {
 
@@ -50,18 +51,25 @@ class ResultAssertion<T> {
         }
 
         FailureAssertion hasCauseInstanceOf(Class<? extends Throwable> type) {
-            assert type.isInstance(cause) : "Expected exception of type ${type.simpleName}, but was ${cause.class.simpleName}"
+            def rootCause = unwrapCause(cause)
+            assert type.isInstance(rootCause): "Expected exception of type ${type.simpleName}, but was ${rootCause.class.name}"
             return this
         }
 
         FailureAssertion hasCauseMessage(String msg) {
-            assert cause.message == msg : "Expected message '${msg}', but was '${cause.message}'"
+            def rootCause = unwrapCause(cause)
+            assert rootCause.message == msg : "Expected message '${msg}', but was '${rootCause.message}'"
             return this
         }
 
-        FailureAssertion hasCauseSatisfying(Closure<?> check) {
-            check.call(cause)
+        FailureAssertion hasCauseSatisfying(Closure<?> verifier) {
+            def rootCause = unwrapCause(cause)
+            verifier.call(rootCause)
             return this
+        }
+
+        private static Throwable unwrapCause(Throwable ex) {
+            return ex instanceof ResultExecutionException && ex.cause != null ? ex.cause : ex
         }
     }
 }

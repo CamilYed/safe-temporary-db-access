@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.testing.dsl.fakes
 
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException
 import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider
 import pl.pw.cyber.dbaccess.domain.ResolvedDatabase
 
@@ -17,7 +18,11 @@ class FakeDatabaseConfigurationProvider implements DatabaseConfigurationProvider
     }
 
     @Override
-    Optional<ResolvedDatabase> resolve(String databaseName) {
-        return Optional.ofNullable(dbs[databaseName])
+    ResolvedDatabase resolve(String databaseName) {
+        ResolvedDatabase db = dbs[databaseName]
+        if (db == null) {
+            throw new ResultExecutionException.DatabaseUnexpectedError("Fake DB not found for: " + databaseName)
+        }
+        return db
     }
 }

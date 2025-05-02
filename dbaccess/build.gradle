@@ -33,13 +33,15 @@ sonar {
 }
 
 project.ext.versions = [
-        groovy             : '4.0.15',
-        spock              : '2.4-M5-groovy-4.0',
-        springBoot         : '3.2.0',
-        postgres           : '42.7.1',
-        nimbus_jose        : '10.1',
-        lombok             : '1.18.30',
-        fluent_validator   : '1.10.0'
+        groovy          : '4.0.15',
+        spock           : '2.4-M5-groovy-4.0',
+        springBoot      : '3.2.0',
+        postgres        : '42.7.1',
+        nimbus_jose     : '10.1',
+        lombok          : '1.18.30',
+        fluent_validator: '1.10.0',
+        testcontainers  : '1.21.0',
+        awaitility      : '4.2.0'
 ]
 
 dependencies {
@@ -50,7 +52,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.postgresql:postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    implementation 'org.postgresql:postgresql'
     implementation 'org.springframework:spring-jdbc'
     implementation "com.nimbusds:nimbus-jose-jwt:${versions.nimbus_jose}"
     implementation "com.github.mvallim:java-fluent-validator:${versions.fluent_validator}"
@@ -67,6 +70,11 @@ dependencies {
     integrationTestImplementation "org.spockframework:spock-core:${versions.spock}"
     integrationTestImplementation "org.spockframework:spock-spring:${versions.spock}"
     integrationTestImplementation "org.springframework.boot:spring-boot-starter-test"
+    integrationTestImplementation "org.testcontainers:testcontainers:${versions.testcontainers}"
+    integrationTestImplementation "org.testcontainers:postgresql:${versions.testcontainers}"
+    integrationTestImplementation "org.testcontainers:mongodb:${versions.testcontainers}"
+    integrationTestImplementation "org.awaitility:awaitility:${versions.awaitility}"
+
 }
 
 test {
