@@ -3,7 +3,6 @@ package pl.pw.cyber.dbaccess.adapters.accessproviders.postgresql;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import pl.pw.cyber.dbaccess.common.result.ResultExecutionException;
 import pl.pw.cyber.dbaccess.common.result.ResultExecutionException.DatabaseNotResolvable;
 import pl.pw.cyber.dbaccess.common.result.ResultExecutionException.DatabaseUnexpectedError;
 import pl.pw.cyber.dbaccess.domain.CreateTemporaryUserRequest;

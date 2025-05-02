@@ -9,10 +9,18 @@ class MovableClock extends Clock {
 
     private Instant currentInstant
     private final ZoneId zone
+    private static MovableClock INSTANCE = null
 
     MovableClock(Instant fixedInstant, ZoneId zone) {
         this.currentInstant = fixedInstant
         this.zone = zone
+        INSTANCE = this
+    }
+    static MovableClock getInstance() {
+        return INSTANCE == null ? new MovableClock(
+                Instant.parse("2025-04-07T12:00:00Z"),
+                ZoneId.systemDefault()
+        ) : INSTANCE
     }
 
     void setInstant(Instant newInstant) {

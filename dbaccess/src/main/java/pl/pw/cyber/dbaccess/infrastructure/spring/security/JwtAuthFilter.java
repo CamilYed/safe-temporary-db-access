@@ -22,7 +22,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenVerifier jwtTokenVerifier;
     private final UserRepository userRepository;
-    private static List<SimpleGrantedAuthority> DEFAULT_ROLE = List.of(new SimpleGrantedAuthority("ROLE_REQUESTER"));
+    private static final List<SimpleGrantedAuthority> DEFAULT_ROLE = List.of(new SimpleGrantedAuthority("ROLE_REQUESTER"));
 
 
     @Autowired

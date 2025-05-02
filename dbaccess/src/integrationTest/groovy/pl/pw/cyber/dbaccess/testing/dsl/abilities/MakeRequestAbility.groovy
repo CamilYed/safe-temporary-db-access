@@ -34,6 +34,11 @@ trait MakeRequestAbility {
         return new HttpRequestBuilder(restTemplate, port)
     }
 
+    HttpRequestBuilder requestedBy(String user) {
+        return requestBuilder()
+                .withHeader("Authorization", "Bearer ${validToken(user)}")
+    }
+
     static class HttpRequestBuilder {
         private final TestRestTemplate restTemplate
         private final int port

@@ -1,10 +1,12 @@
 package pl.pw.cyber.dbaccess.web.accessrequest
 
-import pl.pw.cyber.dbaccess.testing.BaseIT
+
+import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
 
@@ -12,13 +14,14 @@ import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.asse
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
 
-class AccessRequestEndpointIT extends BaseIT implements
+class AccessRequestEndpointIT extends MongoBaseIT implements
         AccessRequestAbility,
         AddExampleUserAbility,
         RunOperationOnDatabaseAbility,
         DatabaseResultAssertion,
         ExtractAccessResponseAbility,
-        DatabaseSelectAbility {
+        DatabaseSelectAbility,
+        MongoAuditAssertionAbility {
 
     def setup() {
         thereIsUser("user")
@@ -200,6 +203,39 @@ class AccessRequestEndpointIT extends BaseIT implements
             dropShouldBeForbiddenFor {
                 table "orders"
                 usingCredentials credentials
+            }
+    }
+
+    def "should create audit log entry upon successful access request"() {
+        given:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("audit_test_db"))
+        and:
+            theAuditLog { shouldBeEmpty() }
+        and:
+            currentTimeIs("2025-05-02T12:00:00Z")
+
+        when:
+            def response = accessRequestBy("user") {
+                anAccessRequest()
+                        .withTargetDatabase("audit_test_db")
+                        .withPermissionLevel("READ_ONLY")
+                        .withDurationMinutes(60)
+            }
+        then:
+            assertThat(response).isOK()
+            def credentials = extractFromResponse(response)
+
+        and:
+            theAuditLog {
+                shouldHaveSingleEntry {
+                    requestedBy("user")
+                    hasGrantedForUser(credentials.username())
+                    hasGrantedForDatabase("audit_test_db")
+                    hasPermission("READ_ONLY")
+                    hasGrantedAt("2025-05-02T12:00:00Z")
+                    hasExpiresAt("2025-05-02T13:00:00Z")
+                    hasNotRevokedStatus()
+                }
             }
     }
 }

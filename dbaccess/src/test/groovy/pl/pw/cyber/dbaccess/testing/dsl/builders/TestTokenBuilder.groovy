@@ -13,7 +13,7 @@ class TestTokenBuilder {
     String audience = "dbaccess-client"
     Map<String, Object> claims = [:]
     Duration ttl = Duration.ofMinutes(5)
-    Instant issueTime = Instant.parse("2025-04-07T12:00:00Z")
+    Instant issueTime = MovableClock.getInstance().instant()
 
     static TestTokenBuilder aToken() {
         return new TestTokenBuilder()

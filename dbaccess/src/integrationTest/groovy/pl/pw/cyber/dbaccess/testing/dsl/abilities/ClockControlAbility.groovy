@@ -31,4 +31,8 @@ trait ClockControlAbility {
     Instant currentTime() {
         return testClock.instant()
     }
+
+    MovableClock testClock() {
+        return testClock
+    }
 }

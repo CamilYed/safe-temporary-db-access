@@ -33,6 +33,7 @@ trait DatabaseSetupAbility {
                     .withDatabaseName(builder.name)
                     .withUsername("someuser")
                     .withPassword("somepassword")
+                    .withReuse(true)
 
             container.start()
 
