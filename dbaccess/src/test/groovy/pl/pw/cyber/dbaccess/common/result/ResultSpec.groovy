@@ -147,8 +147,9 @@ class ResultSpec extends Specification {
             result.getOrThrow()
 
         then:
-            def thrown = thrown(RuntimeException)
-            thrown.message == "Execution failed"
+            def thrown = thrown(ResultExecutionException)
+            thrown.message == "java.lang.IllegalStateException: oh no"
+            thrown.cause instanceof IllegalStateException
             thrown.cause.message == "oh no"
     }
 
@@ -182,10 +183,9 @@ class ResultSpec extends Specification {
         then:
             assertThat(result)
                     .isFailure()
-                    .hasCauseInstanceOf(ResultExecutionException)
-                    .hasCauseSatisfying { ResultExecutionException rex ->
-                        assert rex.cause instanceof IllegalArgumentException
-                        assert rex.cause.message == "boom"
+                    .hasCauseInstanceOf(IllegalArgumentException)
+                    .hasCauseSatisfying { IllegalArgumentException rex ->
+                        assert rex.message == "boom"
                     }
     }
 

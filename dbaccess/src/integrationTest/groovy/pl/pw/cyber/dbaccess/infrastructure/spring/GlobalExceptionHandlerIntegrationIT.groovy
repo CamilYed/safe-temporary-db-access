@@ -1,7 +1,7 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring
 
 
-import pl.pw.cyber.dbaccess.testing.BaseIT
+import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MakeRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.TokenGenerationAbility
@@ -10,7 +10,7 @@ import static org.springframework.http.HttpMethod.POST
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.TestTokenBuilder.aToken
 
-class GlobalExceptionHandlerIntegrationIT extends BaseIT implements
+class GlobalExceptionHandlerIntegrationIT extends MongoBaseIT implements
         MakeRequestAbility,
         TokenGenerationAbility,
         AddExampleUserAbility {
@@ -33,7 +33,8 @@ class GlobalExceptionHandlerIntegrationIT extends BaseIT implements
         then:
             assertThat(response).hasStatusCode(400)
         and:
-            response.body.error == "Bad request"
+            response.body.title == "Bad Request"
+            response.body.detail == "Invalid input or argument"
     }
 
     def "should return 500 when unexpected Throwable is thrown"() {
@@ -50,6 +51,25 @@ class GlobalExceptionHandlerIntegrationIT extends BaseIT implements
         then:
             assertThat(response).hasStatusCode(500)
         and:
-            response.body.error == "Unexpected server error"
+            response.body.title == "Internal Server Error"
+            response.body.detail == "Unexpected processing error"
+    }
+
+    def "should return 500 when ResultExecutionException is thrown"() {
+        given:
+            def token = generateToken(aToken().withSubject("user-1"))
+
+        when:
+            def response = requestBuilder()
+                    .withUrl("/fail/result-execution-exception")
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .withMethod(POST)
+                    .makeRequest()
+
+        then:
+            assertThat(response).hasStatusCode(500)
+        and:
+            response.body.title == "Internal Server Error"
+            response.body.detail == "Unexpected processing error"
     }
 }
