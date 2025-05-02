@@ -30,16 +30,4 @@ class MongoTemporaryAccessAuditLogRepository implements TemporaryAccessAuditLogR
         );
     }
 
-    private TemporaryAccessAuditLog mapToDomainObject(MongoTemporaryAccessAuditLog mongo) {
-        return TemporaryAccessAuditLog.builder()
-          .id(mongo.id())
-          .requestedByUsername(mongo.requestedByUsername())
-          .grantedUsername(mongo.grantedUsername())
-          .targetDatabase(mongo.targetDatabase())
-          .permissionLevel(mongo.permissionLevel())
-          .grantedAt(mongo.grantedAt())
-          .expiresAt(mongo.expiresAt())
-          .revoked(mongo.revoked())
-          .build();
-    }
 }

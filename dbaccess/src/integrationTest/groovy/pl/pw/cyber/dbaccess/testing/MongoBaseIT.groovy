@@ -3,13 +3,16 @@ package pl.pw.cyber.dbaccess.testing
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.support.TestPropertySourceUtils
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.utility.DockerImageName
 import pl.pw.cyber.dbaccess.adapters.mongo.MongoTemplateAuditLogTestFetcher
+import pl.pw.cyber.dbaccess.adapters.mongo.MongoTestFetcherConfig
 import spock.lang.Shared
 
+@Import(MongoTestFetcherConfig)
 @ContextConfiguration(initializers = MongoDbInitializer.class)
 class MongoBaseIT extends BaseIT {
 

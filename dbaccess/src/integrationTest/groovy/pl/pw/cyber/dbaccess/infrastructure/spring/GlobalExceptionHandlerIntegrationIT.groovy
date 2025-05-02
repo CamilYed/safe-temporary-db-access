@@ -1,6 +1,6 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring
 
-
+import pl.pw.cyber.dbaccess.testing.BaseIT
 import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MakeRequestAbility

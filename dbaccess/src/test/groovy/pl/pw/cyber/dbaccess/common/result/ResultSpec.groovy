@@ -219,4 +219,32 @@ class ResultSpec extends Specification {
             ex.cause == cause
             ex.message == cause.toString()
     }
+
+    def "map should catch ResultExecutionException specifically"() {
+        given:
+            def result = Result.success("x")
+
+        when:
+            def mapped = result.map { throw new ResultExecutionException("explicit") }
+
+        then:
+            assertThat(mapped)
+                    .isFailure()
+                    .hasCauseInstanceOf(ResultExecutionException)
+                    .hasCauseMessage("explicit")
+    }
+
+    def "failure(Throwable) should not wrap ResultExecutionException again"() {
+        given:
+            def exception = new ResultExecutionException("already wrapped")
+
+        when:
+            def result = Result.failure((Throwable) exception)
+
+        then:
+            assertThat(result)
+                    .isFailure()
+                    .hasCauseInstanceOf(ResultExecutionException)
+                    .hasCauseMessage("already wrapped")
+    }
 }

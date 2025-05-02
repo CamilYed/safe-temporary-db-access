@@ -1,7 +1,6 @@
 package pl.pw.cyber.dbaccess.common.result;
 
-public sealed class ResultExecutionException extends RuntimeException
-  permits ResultExecutionException.DatabaseNotResolvable, ResultExecutionException.DatabaseUnexpectedError {
+public sealed class ResultExecutionException extends RuntimeException {
 
     public ResultExecutionException(String message) {
         super(message);

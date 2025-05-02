@@ -2,10 +2,8 @@ package pl.pw.cyber.dbaccess.adapters.mongo
 
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.stereotype.Component
 import pl.pw.cyber.dbaccess.domain.TemporaryAccessAuditLog
 
-@Component
 class MongoTemplateAuditLogTestFetcher {
 
     private final MongoTemplate mongoTemplate

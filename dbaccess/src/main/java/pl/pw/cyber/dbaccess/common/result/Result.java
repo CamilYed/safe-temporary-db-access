@@ -48,7 +48,7 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
     default T getOrElse(T defaultValue) {
         return switch (this) {
             case Success<T> s -> s.value();
-            case Failure<T> f -> defaultValue;
+            case Failure<T> ignored -> defaultValue;
         };
     }
 
