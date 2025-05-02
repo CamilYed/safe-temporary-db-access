@@ -67,8 +67,6 @@ class AccessRequestEndpointValidationIT extends BaseIT implements
         when:
             def response = accessRequest(
                     anAccessRequest()
-                            .withPermissionLevel("READ_ONLY")
-                            .withDurationMinutes(10)
                             .withTargetDatabase("nonexistent")
             )
 

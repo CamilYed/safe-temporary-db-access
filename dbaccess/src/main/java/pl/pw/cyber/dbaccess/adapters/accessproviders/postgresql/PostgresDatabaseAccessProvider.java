@@ -3,7 +3,6 @@ package pl.pw.cyber.dbaccess.adapters.accessproviders.postgresql;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import pl.pw.cyber.dbaccess.common.result.ResultExecutionException.DatabaseNotResolvable;
 import pl.pw.cyber.dbaccess.common.result.ResultExecutionException.DatabaseUnexpectedError;
 import pl.pw.cyber.dbaccess.domain.CreateTemporaryUserRequest;
 import pl.pw.cyber.dbaccess.domain.DatabaseAccessProvider;
@@ -20,11 +19,7 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
 
     @Override
     public void createTemporaryUser(CreateTemporaryUserRequest request) {
-        var resolvedDatabaseOpt = databaseConfigurationProvider.resolve(request.targetDatabase());
-        if (resolvedDatabaseOpt.isEmpty()) {
-            throw new DatabaseNotResolvable("Unknown target database: " + request.targetDatabase());
-        }
-        var resolvedDatabase = resolvedDatabaseOpt.get();
+        var resolvedDatabase = databaseConfigurationProvider.resolve(request.targetDatabase());
         var dataSource = new DriverManagerDataSource(
           resolvedDatabase.url(),
           resolvedDatabase.username(),

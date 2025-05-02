@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import pl.pw.cyber.dbaccess.common.result.ResultExecutionException;
 
+import java.util.Optional;
+
 @Slf4j
 @ControllerAdvice
 class GlobalExceptionHandler {
@@ -36,8 +38,9 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(ResultExecutionException.class)
     public ResponseEntity<ProblemDetail> handleResultExecution(ResultExecutionException ex, HttpServletRequest req) {
-        log.error("Result execution failed at {}: {}", req.getRequestURI(), ex.getCause().toString());
-
+        log.error("Result execution failed at {}: {}", req.getRequestURI(),
+          Optional.ofNullable(ex.getCause()).map(Throwable::toString).orElse("no cause")
+        );
         var pd = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         pd.setTitle("Internal Server Error");
         pd.setDetail("Unexpected processing error");

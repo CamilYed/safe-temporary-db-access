@@ -31,6 +31,21 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         stopDatabase()
     }
 
+    def "should not create temporary user when database is resolvable but not running"() {
+        given:
+            thereIs(aResolvableDatabase().withName("test_db"))
+
+        when:
+            def response = accessRequest(
+                    anAccessRequest()
+                            .withTargetDatabase("test_db")
+
+            )
+
+        then:
+            assertThat(response).hasStatusCode(500)
+    }
+
     def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
         given:
             resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
