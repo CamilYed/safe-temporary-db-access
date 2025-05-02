@@ -19,22 +19,6 @@ class AccessRequestEndpointValidationIT extends BaseIT implements
         thereIs(aResolvableDatabase())
     }
 
-    def "should return 200 for valid request"() {
-        given:
-            thereIs(aResolvableDatabase().withName("test_db"))
-
-        when:
-            def response = accessRequest(
-                    anAccessRequest()
-                            .withPermissionLevel("READ_ONLY")
-                            .withDurationMinutes(60)
-                            .withTargetDatabase("test_db")
-            )
-
-        then:
-            assertThat(response).hasStatusCode(200)
-    }
-
     def "should return 400 for missing permissionLevel"() {
         when:
             def response = accessRequest(
@@ -127,5 +111,4 @@ class AccessRequestEndpointValidationIT extends BaseIT implements
                             "durationMinutes must be between 1 and 60 minutes."
                     ])
     }
-
 }

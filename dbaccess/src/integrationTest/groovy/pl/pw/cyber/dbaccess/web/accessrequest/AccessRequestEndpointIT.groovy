@@ -31,7 +31,6 @@ class AccessRequestEndpointIT extends BaseIT implements
     def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
         given:
             resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
-
         and:
             publicSchemaOfDatabaseHasTable("test_db") {
                 table("orders") {
@@ -51,47 +50,40 @@ class AccessRequestEndpointIT extends BaseIT implements
 
         then:
             assertThat(response).isOK()
-
         and:
             var credentials = extractFromResponse(response)
             connectionToDatabaseSucceeds(credentials)
-
         and:
             def rows = selectFromOrders(credentials)
             assertThatRows(rows)
                     .hasNumberOfRows(2)
                     .hasRowWithId(1) { hasAmount(100.50G) }
                     .hasRowWithId(2) { hasAmount(200.75G) }
-
         and:
             updateShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
-
         and:
             insertShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
-
         and:
             deleteShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
-
         and:
             dropShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
     }
 
     def "should create READ_WRITE user with correct privileges in PostgreSQL"() {
         given:
             resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
-
         and:
             publicSchemaOfDatabaseHasTable("test_db") {
                 table("orders") {
@@ -111,37 +103,50 @@ class AccessRequestEndpointIT extends BaseIT implements
 
         then:
             assertThat(response).isOK()
-
         and:
             var credentials = extractFromResponse(response)
             connectionToDatabaseSucceeds(credentials)
-
         and:
-            def rows = selectFromOrders(credentials)
-            assertThatRows(rows)
+            def initialRows = selectFromOrders(credentials)
+            assertThatRows(initialRows)
                     .hasNumberOfRows(2)
                     .hasRowWithId(1) { hasAmount(100.50G) }
                     .hasRowWithId(2) { hasAmount(200.75G) }
-
-        and: "Should allow INSERT and UPDATE but forbid DELETE and DROP"
-            updateShouldSucceed(credentials)
-            insertShouldSucceed(credentials)
-
+        and:
+            updateShouldSucceedFor {
+                table "orders"
+                usingCredentials credentials
+                set amount: 999.99G
+                where id: 1
+            }
+        and:
+            insertShouldSucceedFor {
+                table "orders"
+                usingCredentials credentials
+                values amount: 333.33G
+            }
+        then:
+            def modifiedRows = selectFromOrders(credentials)
+            assertThatRows(modifiedRows)
+                    .hasNumberOfRows(3)
+                    .hasRowWithId(1) { hasAmount(999.99G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+                    .hasRowWithId(3) { hasAmount(333.33G) }
+        and:
             deleteShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
-
+        and:
             dropShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
     }
 
     def "should create DELETE user with correct privileges in PostgreSQL"() {
         given:
             resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
-
         and:
             publicSchemaOfDatabaseHasTable("test_db") {
                 table("orders") {
@@ -161,34 +166,40 @@ class AccessRequestEndpointIT extends BaseIT implements
 
         then:
             assertThat(response).isOK()
-
         and:
             var credentials = extractFromResponse(response)
             connectionToDatabaseSucceeds(credentials)
-
         and:
-            def rows = selectFromOrders(credentials)
-            assertThatRows(rows)
+            def initialRows = selectFromOrders(credentials)
+            assertThatRows(initialRows)
                     .hasNumberOfRows(2)
                     .hasRowWithId(1) { hasAmount(100.50G) }
                     .hasRowWithId(2) { hasAmount(200.75G) }
-
-        and: "Should allow DELETE but forbid INSERT, UPDATE, and DROP"
-            deleteShouldSucceed(credentials)
-
+        and:
+            deleteShouldSucceedFor {
+                table "orders"
+                usingCredentials credentials
+                where id: 1
+            }
+        then:
+            def rowsAfterDelete = selectFromOrders(credentials)
+            assertThatRows(rowsAfterDelete)
+                    .hasNumberOfRows(1)
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+        and:
             updateShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
-
+        and:
             insertShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
-
+        and:
             dropShouldBeForbiddenFor {
                 table "orders"
-                usingCredentials(credentials)
+                usingCredentials credentials
             }
     }
 }

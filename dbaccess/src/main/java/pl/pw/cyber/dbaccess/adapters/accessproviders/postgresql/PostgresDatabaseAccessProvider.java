@@ -1,11 +1,16 @@
 package pl.pw.cyber.dbaccess.adapters.accessproviders.postgresql;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException;
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException.DatabaseNotResolvable;
+import pl.pw.cyber.dbaccess.common.result.ResultExecutionException.DatabaseUnexpectedError;
 import pl.pw.cyber.dbaccess.domain.CreateTemporaryUserRequest;
 import pl.pw.cyber.dbaccess.domain.DatabaseAccessProvider;
 import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider;
 
+@Slf4j
 class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
 
     private final DatabaseConfigurationProvider databaseConfigurationProvider;
@@ -18,7 +23,7 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
     public void createTemporaryUser(CreateTemporaryUserRequest request) {
         var resolvedDatabaseOpt = databaseConfigurationProvider.resolve(request.targetDatabase());
         if (resolvedDatabaseOpt.isEmpty()) {
-            throw new IllegalArgumentException("Unknown target database: " + request.targetDatabase());
+            throw new DatabaseNotResolvable("Unknown target database: " + request.targetDatabase());
         }
         var resolvedDatabase = resolvedDatabaseOpt.get();
         var dataSource = new DriverManagerDataSource(
@@ -34,15 +39,16 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
             grantPrivileges(jdbc, request);
             configureDefaultPrivileges(jdbc, request);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create temporary user: " + request.username(), e);
+            log.error("Error creating temporary user", e);
+            throw new DatabaseUnexpectedError(e.getMessage());
         }
     }
 
     private void createUser(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
-        String username = "\"" + request.username() + "\"";
-        String password = "'" + request.password().replace("'", "''") + "'";
+        var username = "\"" + request.username() + "\"";
+        var password = "'" + request.password().replace("'", "''") + "'";
 
-        String sql = String.format(
+        var sql = String.format(
           "CREATE ROLE %s WITH LOGIN PASSWORD %s",
           username,
           password
@@ -52,8 +58,8 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
     }
 
     private void grantPrivileges(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
-        String username = "\"" + request.username() + "\"";
-        String database = "\"" + request.targetDatabase() + "\"";
+        var username = "\"" + request.username() + "\"";
+        var database = "\"" + request.targetDatabase() + "\"";
 
         jdbc.getJdbcTemplate().execute(
           String.format("GRANT CONNECT ON DATABASE %s TO %s", database, username)
@@ -79,18 +85,18 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
     }
 
     private void configureDefaultPrivileges(NamedParameterJdbcTemplate jdbc, CreateTemporaryUserRequest request) {
-        String username = "\"" + request.username() + "\"";
+        var username = "\"" + request.username() + "\"";
 
-        String privileges = switch (request.permissionLevel()) {
+        var privileges = switch (request.permissionLevel()) {
             case READ_ONLY -> "SELECT";
             case READ_WRITE -> "SELECT, INSERT, UPDATE";
             case DELETE -> "SELECT, DELETE";
         };
 
-        String sql = """
-        ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT %s ON TABLES TO %s
-        """.formatted(privileges, username);
+        var sql = """
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public
+          GRANT %s ON TABLES TO %s
+          """.formatted(privileges, username);
 
         jdbc.getJdbcTemplate().execute(sql);
     }
@@ -98,6 +104,6 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
 
     @Override
     public void revokeTemporaryUser(String username, String targetDatabase) {
-
+        // TODO
     }
 }

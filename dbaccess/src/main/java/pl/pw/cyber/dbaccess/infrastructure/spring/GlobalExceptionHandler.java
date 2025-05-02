@@ -36,14 +36,4 @@ class GlobalExceptionHandler {
 
         return ResponseEntity.internalServerError().body(pd);
     }
-    /**
-      Throwable cause = ex.getCause();
-      log.error("Result execution failed at {}: {}", req.getRequestURI(), cause.toString());
-
-      var pd = ProblemDetail.forStatus(cause instanceof DomainException ? 422 : 500);
-      pd.setTitle("Request failed");
-      pd.setDetail("Something went wrong while processing the request");
-
-      return ResponseEntity.status(pd.getStatus()).body(pd);
-     */
 }

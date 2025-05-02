@@ -30,21 +30,6 @@ class AuthorizationIT extends BaseIT implements
         cleanupLogCapture()
     }
 
-    def "should allow request if user coming from token subject exists"() {
-        expect:
-            thereIsUser("some-user")
-        and:
-            def token = generateToken(aToken()
-                    .withSubject("some-user")
-            )
-        when:
-            def response = accessRequestBuilder()
-                    .withHeader("Authorization", "Bearer ${token}")
-                    .makeRequest()
-        then:
-            assertThat(response).hasStatusCode(200)
-    }
-
     def "should reject request if user is not in allowlist (403)"() {
         expect:
             userWithNameDoesNotExists("not-existing-user")
@@ -53,6 +38,7 @@ class AuthorizationIT extends BaseIT implements
             def token = generateToken(aToken()
                     .withSubject("not-existing-user")
             )
+
         when:
             def response = accessRequestBuilder()
                     .withHeader("Authorization", "Bearer ${token}")
