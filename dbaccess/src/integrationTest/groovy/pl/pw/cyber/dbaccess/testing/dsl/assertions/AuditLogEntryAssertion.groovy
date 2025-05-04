@@ -1,6 +1,6 @@
 package pl.pw.cyber.dbaccess.testing.dsl.assertions
 
-import pl.pw.cyber.dbaccess.application.results.TemporaryAccessGranted
+
 import pl.pw.cyber.dbaccess.domain.TemporaryAccessAuditLog
 import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
 
@@ -23,11 +23,7 @@ class AuditLogEntryAssertion {
 
     AuditLogEntryAssertion hasGrantedForDatabase(String u) { assert entry.targetDatabase() == u; return this }
 
-    AuditLogEntryAssertion hasGrantedForUser(TemporaryAccessGranted c) {
-        hasGrantedForUser(c.username()); hasExpiresAt(c.expiresAt()); return this
-    }
-
-    AuditLogEntryAssertion hasDatabase(String d) { assert entry.targetDatabase() == d; return this }
+    AuditLogEntryAssertion hasTargetDatabase(String d) { assert entry.targetDatabase() == d; return this }
 
     AuditLogEntryAssertion hasPermission(String p) { assert entry.permissionLevel() == p; return this }
 

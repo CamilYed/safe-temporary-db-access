@@ -2,6 +2,7 @@ package pl.pw.cyber.dbaccess.application;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import pl.pw.cyber.dbaccess.application.commands.GrantTemporaryAccessCommand;
 import pl.pw.cyber.dbaccess.application.results.TemporaryAccessGranted;
 import pl.pw.cyber.dbaccess.common.result.Result;
@@ -17,6 +18,7 @@ import java.time.Clock;
 @Slf4j
 @RequiredArgsConstructor
 public class TemporaryDbAccessService {
+
     private final Clock clock;
     private final UserCredentialsGenerator credentialsGenerator;
     private final DatabaseAccessProvider databaseAccessProvider;
@@ -24,41 +26,40 @@ public class TemporaryDbAccessService {
 
     public Result<TemporaryAccessGranted> accessRequest(GrantTemporaryAccessCommand command) {
         return Result.of(() -> {
-              log.info("Attempting to access to database {}, by {}", command.targetDatabase(), command.requestedBy());
-              var credentials = createUserInDatabase(command);
-              var auditLog = createAuditLog(command, credentials.username());
-              return new TemporaryAccessGranted(
-                command.targetDatabase(),
-                credentials.username(),
-                credentials.password(),
-                auditLog.expiresAt()
-              );
-          }
-        );
+            log.info("Granting temporary access to database '{}' for user '{}'", command.targetDatabase(), command.requestedBy());
+
+            var credentials = createTemporaryUser(command);
+            var auditLog = logAccessGrant(command, credentials.username());
+
+            return new TemporaryAccessGranted(
+              command.targetDatabase(),
+              credentials.username(),
+              credentials.password(),
+              auditLog.expiresAt()
+            );
+        });
     }
 
-    private TemporaryCredentials createUserInDatabase(GrantTemporaryAccessCommand command) {
+    private TemporaryCredentials createTemporaryUser(GrantTemporaryAccessCommand command) {
         var credentials = credentialsGenerator.generate();
-        databaseAccessProvider.createTemporaryUser(
-          CreateTemporaryUserRequest.builder()
-            .username(credentials.username())
-            .password(credentials.password())
-            .permissionLevel(command.permissionLevel())
-            .targetDatabase(command.targetDatabase())
-            .build()
-        );
-        log.info("Successfully created temporary user '{}' in database '{}'", credentials.username(), command.targetDatabase());
+        var request = CreateTemporaryUserRequest.builder()
+          .username(credentials.username())
+          .password(credentials.password())
+          .permissionLevel(command.permissionLevel())
+          .targetDatabase(command.targetDatabase())
+          .build();
+        databaseAccessProvider.createTemporaryUser(request);
+        log.info("Created temporary user '{}' for database '{}'", credentials.username(), command.targetDatabase());
         return credentials;
     }
 
-
-    private TemporaryAccessAuditLog createAuditLog(GrantTemporaryAccessCommand command, String grantedUsername) {
+    private TemporaryAccessAuditLog logAccessGrant(GrantTemporaryAccessCommand command, String username) {
         var grantedAt = clock.instant();
         var expiresAt = grantedAt.plus(command.duration());
 
         var auditLog = TemporaryAccessAuditLog.builder()
           .requestedByUsername(command.requestedBy())
-          .grantedUsername(grantedUsername)
+          .grantedUsername(username)
           .targetDatabase(command.targetDatabase())
           .permissionLevel(command.permissionLevel().name())
           .grantedAt(grantedAt)
@@ -67,13 +68,46 @@ public class TemporaryDbAccessService {
           .build();
 
         auditLogRepository.logTemporaryAccess(auditLog);
-
-        log.info(
-          "Audit log for temporary access for user '{}' in database '{}' has been created {}",
-          grantedUsername,
-          command.targetDatabase(),
-          auditLog
-        );
+        log.info("Logged access grant for user '{}' to database '{}'", username, command.targetDatabase());
         return auditLog;
+    }
+
+    @Scheduled(fixedRateString = "${dbaccess.revoke-schedule-ms}")
+    public void revokeExpiredAccess() {
+        var now = clock.instant();
+        log.info("Running task to revoke expired access at {}", now);
+
+        var expiredLogs = auditLogRepository.findExpiredAndNotRevoked(now);
+
+        if (expiredLogs.isEmpty()) {
+            log.info("No expired access to revoke.");
+            return;
+        }
+
+        log.info("Found {} expired entries", expiredLogs.size());
+
+        for (var logEntry : expiredLogs) {
+            revokeAccess(logEntry);
+        }
+
+        log.info("Finished revoking expired access.");
+    }
+
+    private void revokeAccess(TemporaryAccessAuditLog logEntry) {
+        try {
+            log.info("Revoking access for '{}' in database '{}' (ID: {})",
+              logEntry.grantedUsername(), logEntry.targetDatabase(), logEntry.id()
+            );
+
+            databaseAccessProvider.revokeTemporaryUser(logEntry.grantedUsername(), logEntry.targetDatabase());
+
+            var updatedLog = logEntry.withRevoked(true);
+            auditLogRepository.logTemporaryAccess(updatedLog);
+
+            log.info("Revoked and updated audit log for '{}' (ID: {})", logEntry.grantedUsername(), logEntry.id());
+
+        } catch (Exception e) {
+            log.error("Failed to revoke access for '{}' (ID: {}): {}", logEntry.grantedUsername(), logEntry.id(), e.getMessage(), e);
+        }
     }
 }

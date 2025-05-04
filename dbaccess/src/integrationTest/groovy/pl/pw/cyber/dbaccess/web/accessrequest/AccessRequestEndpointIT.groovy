@@ -10,6 +10,8 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
 
+import java.time.Duration
+
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
@@ -243,13 +245,85 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         and:
             theAuditLog {
                 shouldHaveSingleEntry {
-                    requestedBy("user")
+                    hasRequestedBy("user")
                     hasGrantedForUser(credentials.username())
                     hasGrantedForDatabase("audit_test_db")
                     hasPermission("READ_ONLY")
                     hasGrantedAt("2025-05-02T12:00:00Z")
                     hasExpiresAt("2025-05-02T13:00:00Z")
                     hasNotRevokedStatus()
+                }
+            }
+    }
+
+    def "should revoke expired user access via scheduler"() {
+        given:
+            currentTimeIs("2025-05-03T14:00:00Z")
+        and:
+            resolvedDatabaseIsRunning(aResolvableDatabase().withName("revoke_db"))
+        and:
+            publicSchemaOfDatabaseHasTable("revoke_db") {
+                table("orders") {
+                    withColumn "id SERIAL PRIMARY KEY"
+                    withColumn "amount DECIMAL(10,2)"
+                    withRow amount: 100.50
+                    withRow amount: 200.75
+                }
+            }
+
+        when:
+            def response = accessRequestBy("user") {
+                anAccessRequest()
+                        .withTargetDatabase("revoke_db")
+                        .withPermissionLevel("READ_ONLY")
+                        .withDurationMinutes(1)
+            }
+
+        then:
+            assertThat(response).isOK()
+
+        and:
+            def credentials = extractFromResponse(response)
+
+        and:
+            def initialRows = selectFromOrders(credentials)
+            assertThatRows(initialRows)
+                    .hasNumberOfRows(2)
+                    .hasRowWithId(1) { hasAmount(100.50G) }
+                    .hasRowWithId(2) { hasAmount(200.75G) }
+
+        and:
+            def grantedUsername = credentials.username()
+            database("revoke_db") {
+                hasRole(grantedUsername)
+                allowsConnectionFor(grantedUsername, credentials.password())
+            }
+
+        and:
+            theAuditLog {
+                shouldHaveSingleEntry {
+                    hasRequestedBy("user")
+                    hasTargetDatabase("revoke_db")
+                    hasGrantedForUser(grantedUsername)
+                    hasGrantedAt("2025-05-03T14:00:00Z")
+                    hasExpiresAt("2025-05-03T14:01:00Z")
+                    hasNotRevokedStatus()
+                }
+            }
+
+        when:
+            timeElapsed(Duration.ofMinutes(1).plusSeconds(1))
+
+        then:
+            eventually {
+                database("revoke_db") {
+                    doesNotHaveRole(grantedUsername)
+                    doesNotHaveActiveSession(grantedUsername)
+                }
+                theAuditLog {
+                     shouldHaveSingleEntry {
+                         hasRevokedStatus()
+                     }
                 }
             }
     }

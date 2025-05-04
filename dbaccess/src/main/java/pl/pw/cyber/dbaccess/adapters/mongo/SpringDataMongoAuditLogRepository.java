@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 interface SpringDataMongoAuditLogRepository extends MongoRepository<MongoTemporaryAccessAuditLog, String> {
 
+    List<MongoTemporaryAccessAuditLog> findByExpiresAtBeforeAndRevokedFalse(Instant now);
 }
