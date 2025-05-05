@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: safe-access-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: test1
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:6
+    container_name: safe-access-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  app:
+    image: safe-access-app:latest
+    container_name: safe-access-api
+    build:
+      context: ../..
+      dockerfile: dbaccess/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../../.env
+    depends_on:
+      - postgres
+      - mongo
+
+volumes:
+  pgdata:
+  mongodata:
