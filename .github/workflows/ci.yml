@@ -77,7 +77,9 @@ jobs:
       - name: Set image tags
         id: vars
         run: |
-          IMAGE_BASE="ghcr.io/${{ github.repository_owner }}/safe-temporary-db-access"
+          REPO_OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_BASE="ghcr.io/${REPO_OWNER_LC}/safe-temporary-db-access"
+
           if [[ "${GITHUB_REF}" == refs/heads/main ]]; then
             TAGS="${IMAGE_BASE}:main,${IMAGE_BASE}:latest"
           elif [[ "${GITHUB_REF}" == refs/pull/* ]]; then
@@ -86,7 +88,9 @@ jobs:
           else
             TAGS="${IMAGE_BASE}:custom"
           fi
+
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
+      
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
