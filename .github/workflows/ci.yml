@@ -52,6 +52,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --info
 
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbaccess-jar
+          path: dbaccess/build/libs/*.jar
+
   docker-publish:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
