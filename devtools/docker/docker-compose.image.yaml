@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   postgres:
-    image: postgres:15
+    image: postgres:16
     container_name: safe-access-postgres
     restart: unless-stopped
     environment:
@@ -24,21 +22,17 @@ services:
       - mongodata:/data/db
 
   app:
-    image: ghcr.io/your-username/safe-temporary-db-access:latest
+    image: ghcr.io/camilyed/safe-temporary-db-access:latest
     container_name: safe-access-app
     depends_on:
       - postgres
       - mongo
     ports:
       - "8080:8080"
-    environment:
-      TEST1_DB_URL: jdbc:postgresql://postgres:5432/test1
-      TEST1_DB_USERNAME: admin
-      TEST1_DB_PASSWORD: admin
-      MONGO_URL: mongodb://mongo:27017
-      PUBLIC_KEY_LOCATION: /app/ec256-public.der
+    env_file:
+      - ./../.env
     volumes:
-      - ./devtools/jwt/ec256-public.der:/app/ec256-public.der
+      - ../jwt/ec256-public.der:/devtools/jwt/ec256-public.der
 
 volumes:
   pgdata:

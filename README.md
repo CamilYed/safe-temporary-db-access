@@ -22,7 +22,7 @@ The core idea: let developers request short-lived database access through a secu
 
 ### 🔐 Temporary Credential Generation
 
-Every temporary access request generates **unique, cryptographically secure credentials**, designed to meet strong security and entropy requirements.
+Every temporary access request generates **strong, cryptographically secure credentials**, designed to meet strong security and entropy requirements.
 
 **Username:**
 

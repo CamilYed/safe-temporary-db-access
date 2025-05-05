@@ -15,7 +15,7 @@ spring:
       uri: ${MONGO_URI:mongodb://localhost:27017/safe_access_audit}
 
 jwt:
-  public-key: ${PUBLIC_KEY_LOCATION}:""
+  public-key: ${PUBLIC_KEY_LOCATION:/devtools/jwt/ec256-public.der}
 
 dbaccess:
   revoke-schedule-ms: 60000
