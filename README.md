@@ -20,57 +20,145 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
-## ✅ TODO (TDD-first)
+### 🔐 Temporary Credential Generation
 
-### ✅  Phase 1: Project Setup
+Every temporary access request generates **unique, cryptographically secure credentials**, designed to meet strong security and entropy requirements.
 
-- [✅] Initialize Spring Boot + Gradle project
-- [✅] Add Spock testing support
-- [✅] Write integration test that loads Spring context and asserts it is not null
-- [✅] Configure minimal CI (GitHub Actions)
+**Username:**
 
-### ✅ Phase 2 – Integration Test Strategy Checklist
+- 12 characters long
+- Lowercase letters and digits only (`[a-z0-9]`)
+- Example: `user7g5m9dzq`
 
-#### 🔹 Step 2. Functional Core Scenarios (Happy Path)
+**Password:**
 
-- [✅] Valid request creates user with `READ_ONLY` permissions
-- [✅] User with `READ_WRITE` gets INSERT, UPDATE rights
-- [✅] User with `DELETE` gets DELETE right
-- [✅] TTL expiration removes user from DB
-- [✅] Response includes username/password only once
-- [✅] Username/password follow secure formats and are validated
-- [✅] Scheduled revocation logic removes expired access
-- [✅] Unsafe inputs (e.g., SQLi) are rejected and logged
-- [✅] All access and revocation events are written to audit log
+- 16 characters long
+- Must include:
+   - At least 1 uppercase letter (A–Z)
+   - At least 1 lowercase letter (a–z)
+   - At least 1 digit (0–9)
+   - At least 1 special character (`!@#$%^&*()-_+=<>?`)
+- Contains at least 10 unique characters
+- High entropy (≥ 50 bits), safe against brute-force and predictable patterns
+- Example: `G7$pxR!dKmZ&20#b`
 
----
-
-### ✅  Step 3. PostgreSQL – Role & Permissions Verification
-
-- [✅] User exists in `pg_roles`
-- [✅] Only granted allowed privileges (e.g. no DROP)
-- [✅] User is removed after TTL
-- [✅] `READ_ONLY` user cannot perform DELETE
+Credential generation is tested for format and entropy strength.  
+[Credential Generation Test](https://github.com/CamilYed/safe-temporary-db-access/blob/main/dbaccess/src/test/groovy/pl/pw/cyber/dbaccess/adapters/generator/UserCredentialsGeneratorSpec.groovy)
 
 ---
 
-### ✅  Step 4. MongoDB – Audit Logging
+### 📜 JWT Format & Cryptographic Constraints
 
-- [✅] Audit entry saved with requestor, username, and TTL
-- [✅] Audit entry includes permission level
-- [✅] Audit entry does not store the password
-- [✅] Audit log retains failed revocation entries (e.g. invalid user/DB)
+All access tokens must comply with strict security requirements:
+
+- **Signed using ECDSA with EC256 curve (prime256v1)**
+- **5 minutes maximum TTL (expiration limit)**
+- **Public key must be at least 256 bits**
+- **Unsigned tokens or other algorithms (e.g. RSA) are rejected**
+- **Claims must contain:**
+   - `sub` – username (subject)
+   - `iat` – issued at timestamp
+   - `exp` – expiration timestamp (≤ 5 min)
+   - `iss` – must be `"dbaccess-api"`
+   - `aud` – must include `"dbaccess-client"`
+
+Example JWT claims:
+
+```json
+{
+  "sub": "alice",
+  "iat": 1712491200,
+  "exp": 1712491500,
+  "iss": "dbaccess-api",
+  "aud": ["dbaccess-client"]
+}
+```
+
+These constraints are enforced in `JwtTokenVerifier.java` and thoroughly tested in:
+- [JwtTokenVerifierSpec.groovy](https://github.com/CamilYed/safe-temporary-db-access/blob/main/dbaccess/src/test/groovy/pl/pw/cyber/dbaccess/infrastructure/spring/security/JwtTokenVerifierSpec.groovy)
+- [JwtTokenVerifierIntegrationIT.groovy](https://github.com/CamilYed/safe-temporary-db-access/blob/main/dbaccess/src/integrationTest/groovy/pl/pw/cyber/dbaccess/infrastructure/spring/security/JwtTokenVerifierIntegrationIT.groovy)
+
+## ✅ Project Checklist
+
+### 🛠️ Phase 0: Setup
+
+- [✅] Spring Boot 3 + Gradle
+- [✅] Spock integration (Groovy-based testing)
+- [✅] GitHub Actions for CI
+- [✅] SonarCloud integration (coverage, SAST)
+- [✅] Docker Compose for local development
+- [✅] EC256 key pair generation for JWT (DER-encoded public key)
+- [✅] `.yaml`-based database and allowlist configuration
+
+### 🔐 Step 1: Auth & JWT
+
+- [✅] Reject missing JWT → 401 (AuthenticationIT)
+- [✅] Reject expired JWT → 401
+- [✅] Reject JWT with long TTL → 401
+- [✅] Reject invalid JWT format → 401
+- [✅] Reject unauthorized subject not on allowlist → 403 (AuthorizationIT)
+- [✅] Accept valid subject from allowlist → 200
+- [✅] Accept token signed with valid EC private key → subject, issuer, audience verified
+- [✅] Verifies token signed with correct EC key
+- [✅] Rejects token signed with wrong EC key → "Invalid signature"
+- [✅] Rejects unsigned token → "Not a JWS header"
+- [✅] Rejects expired token → "Token expired"
+- [✅] Rejects RSA-signed token → "Invalid token"
+- [✅] Rejects token with incorrect `iss` → "Invalid issuer"
+- [✅] Rejects token with incorrect `aud` → "Invalid audience
+- [✅] Extracts subject from token → mapped to `Authentication.getPrincipal()`
+- [✅] Exposes raw JWT token via `Authentication.getCredentials()`
+- [✅] Marks authentication as valid (`isAuthenticated = true`)
+- [✅] Returns proper roles (`SimpleGrantedAuthority` list)
+
+### ⚙️ Step 2: Input Validation (Request Validator)
+
+- [✅] Required fields: permissionLevel, durationMinutes, targetDatabase
+- [✅] permissionLevel: must be one of READ_ONLY, READ_WRITE, DELETE
+- [✅] durationMinutes: must be between 1 and 60
+- [✅] targetDatabase must be resolvable
+- [✅] Reject invalid request → 400 + details (AccessRequestEndpointValidationIT)
+- [✅] Multiple errors → return combined list
+- [✅] Accept valid request → 200
+- [✅] No excessive error details returned to client (GlobalExceptionHandlerIntegrationIT)
+
+### 🌐 Step 3: Functional Core Logic (Access Granting)
+
+- [✅] READ_ONLY → user with SELECT privilege (AccessRequestEndpointIT)
+- [✅] READ_WRITE → adds INSERT, UPDATE
+- [✅] DELETE → adds DELETE permission
+- [✅] Forbidden actions rejected based on permission
+- [✅] Revoke access after TTL via scheduler
+- [✅] Credentials only returned once
+- [✅] User roles removed after expiry
+- [✅] Safe failure handling if DB is unavailable (no exception thrown)
+- [✅] Invalid usernames/roles (SQL injection) → logged and skipped
+- [✅] Unsafe identifiers logged at ERROR level
+- [✅] Credential generation tested in isolation
+
+### 🧪 Step 4: PostgreSQL Specifics
+
+- [✅] Temporary users are visible in `pg_roles`
+- [✅] Permissions match selected level
+- [✅] Attempted forbidden operations (e.g. DROP) rejected
+- [✅] Users revoked automatically after TTL
+- [✅] Users with no roles are still revoked cleanly
+
+### 📝 Step 5: Audit Logging (MongoDB)
+
+- [✅] Audit log entry created for access request
+- [✅] Audit contains: requestor, target DB, username, permission, TTL
+- [✅] Password is NOT stored
+- [✅] Revoked status is properly updated
+- [✅] Invalid logs (e.g., unknown DB) are ignored, not removed
+
+### 🔎 Phase 6: Security Coverage
+
+- [✅] Code coverage over 80% (verified in SonarCloud)
+- [✅] Static Application Security Testing (SAST)
+- [ ] [Optional] GitHub Action: Penetration Test with OWASP ZAP or Burp Suite
 
 ---
-
-### 🔐 Phase 3: Security & Monitoring
-
-- [✅] Static Application Security Testing (SAST) via SonarCloud
-- [✅] Test coverage >80% (measured by SonarCloud)
-- [ ] [Optional] Integrate penetration testing tool (e.g. OWASP ZAP via GitHub Action)
-
----
-
 ## [TODO] 🐳 Running Locally with Docker Compose
 
 1. **Generate EC keys** for JWT (using OpenSSL):
