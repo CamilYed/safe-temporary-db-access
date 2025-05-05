@@ -42,14 +42,14 @@ class MongoTemporaryAccessAuditLogRepository implements TemporaryAccessAuditLogR
 
     private static TemporaryAccessAuditLog mapToDomain(MongoTemporaryAccessAuditLog doc) {
         return TemporaryAccessAuditLog.builder()
-          .id(doc.id())
-          .requestedByUsername(doc.requestedByUsername())
-          .grantedUsername(doc.grantedUsername())
-          .targetDatabase(doc.targetDatabase())
-          .permissionLevel(doc.permissionLevel())
-          .grantedAt(doc.grantedAt())
-          .expiresAt(doc.expiresAt())
-          .revoked(doc.revoked())
+          .withId(doc.id())
+          .withRequestedByUsername(doc.requestedByUsername())
+          .withGrantedUsername(doc.grantedUsername())
+          .withTargetDatabase(doc.targetDatabase())
+          .withPermissionLevel(doc.permissionLevel())
+          .withGrantedAt(doc.grantedAt())
+          .withExpiresAt(doc.expiresAt())
+          .withRevoked(doc.revoked())
           .build();
     }
 }

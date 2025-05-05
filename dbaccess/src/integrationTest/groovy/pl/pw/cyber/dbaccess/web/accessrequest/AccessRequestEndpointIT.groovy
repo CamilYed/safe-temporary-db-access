@@ -3,6 +3,7 @@ package pl.pw.cyber.dbaccess.web.accessrequest
 
 import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddAuditLogAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
@@ -10,12 +11,14 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.SchedulingControlAbility
 import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
+import pl.pw.cyber.dbaccess.testing.dsl.builders.TemporaryAccessAuditLogBuilder
 
 import java.time.Duration
 
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
+import static pl.pw.cyber.dbaccess.testing.dsl.builders.TemporaryAccessAuditLogBuilder.anExpiredInvalidAuditLog
 
 class AccessRequestEndpointIT extends MongoBaseIT implements
         AccessRequestAbility,
@@ -25,7 +28,8 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         ExtractAccessResponseAbility,
         DatabaseSelectAbility,
         MongoAuditAssertionAbility,
-        SchedulingControlAbility {
+        SchedulingControlAbility,
+        AddAuditLogAbility {
 
     def setup() {
         thereIsUser("user")
@@ -223,6 +227,30 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 table "orders"
                 usingCredentials credentials
             }
+    }
+
+    def "should do nothing when there are no expired access logs"() {
+        given:
+            currentTimeIs("2025-05-04T12:00:00Z")
+            theAuditLog { shouldBeEmpty() }
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            theAuditLog { shouldBeEmpty() }
+    }
+
+    def "should handle failure when revoking invalid audit log"() {
+        given:
+           thereIs(anExpiredInvalidAuditLog())
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            noExceptionThrown()
+
     }
 
     def "should create audit log entry upon successful access request"() {

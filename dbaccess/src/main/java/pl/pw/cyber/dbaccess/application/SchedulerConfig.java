@@ -11,7 +11,6 @@ class SchedulerConfig {
 
     @Bean
     ThreadPoolTaskScheduler taskScheduler() {
-        System.out.println("---------------------- PROD SCHEDULER INIT ----------------------");
         var scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(2);
         scheduler.setThreadNamePrefix("revoke-scheduler-");
@@ -34,7 +33,6 @@ class SchedulerConfig {
         @Override
         @Scheduled(fixedRateString = "${dbaccess.revoke-schedule-ms}")
         public void schedule() {
-            System.out.println("---------------------- @Scheduled(fixedRateString = \"${dbaccess.revoke-schedule-ms}\") PROD SCHEDULER INIT ----------------------");
             service.revokeExpiredAccess();
         }
     }

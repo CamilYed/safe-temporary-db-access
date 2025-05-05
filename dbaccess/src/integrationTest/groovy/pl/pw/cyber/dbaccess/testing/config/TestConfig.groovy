@@ -1,10 +1,8 @@
 package pl.pw.cyber.dbaccess.testing.config
 
-
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import pl.pw.cyber.dbaccess.application.RevokeScheduler
 import pl.pw.cyber.dbaccess.application.TemporaryDbAccessService
 import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider
@@ -41,18 +39,6 @@ class TestConfig {
     @Primary
     RevokeScheduler revokeScheduler(TemporaryDbAccessService service) {
         return new TestRevokeScheduler(service)
-    }
-
-    @Bean
-    @Primary
-    ThreadPoolTaskScheduler taskScheduler() {
-        var scheduler = new ThreadPoolTaskScheduler()
-        scheduler.setPoolSize(2)
-        scheduler.setThreadNamePrefix("test-scheduler-")
-        scheduler.setWaitForTasksToCompleteOnShutdown(false)
-        scheduler.setAwaitTerminationMillis(0)
-        scheduler.shutdown()
-        return scheduler
     }
 
     static class TestRevokeScheduler implements RevokeScheduler {

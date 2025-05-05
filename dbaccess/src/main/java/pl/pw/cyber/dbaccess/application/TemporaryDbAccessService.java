@@ -58,13 +58,13 @@ public class TemporaryDbAccessService {
         var expiresAt = grantedAt.plus(command.duration());
 
         var auditLog = TemporaryAccessAuditLog.builder()
-          .requestedByUsername(command.requestedBy())
-          .grantedUsername(username)
-          .targetDatabase(command.targetDatabase())
-          .permissionLevel(command.permissionLevel().name())
-          .grantedAt(grantedAt)
-          .expiresAt(expiresAt)
-          .revoked(false)
+          .withRequestedByUsername(command.requestedBy())
+          .withGrantedUsername(username)
+          .withTargetDatabase(command.targetDatabase())
+          .withPermissionLevel(command.permissionLevel().name())
+          .withGrantedAt(grantedAt)
+          .withExpiresAt(expiresAt)
+          .withRevoked(false)
           .build();
 
         auditLogRepository.logTemporaryAccess(auditLog);
