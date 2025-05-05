@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+/devtools/jwt/ec256-private.pem
+/devtools/.env
