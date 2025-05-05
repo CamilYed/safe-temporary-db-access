@@ -20,57 +20,78 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
-## ✅ TODO (TDD-first)
+## ✅ Project Checklist
 
-### ✅  Phase 1: Project Setup
+### 🛠️ Phase 0: Setup
 
-- [✅] Initialize Spring Boot + Gradle project
-- [✅] Add Spock testing support
-- [✅] Write integration test that loads Spring context and asserts it is not null
-- [✅] Configure minimal CI (GitHub Actions)
+- [✅] Spring Boot 3 + Gradle
+- [✅] Spock integration (Groovy-based testing)
+- [✅] GitHub Actions for CI
+- [✅] SonarCloud integration (coverage, SAST)
+- [✅] Docker Compose for local development
+- [✅] EC256 key pair generation for JWT (DER-encoded public key)
+- [✅] `.yaml`-based database and allowlist configuration
 
-### ✅ Phase 2 – Integration Test Strategy Checklist
+### 🔐 Step 1: Auth & JWT
 
-#### 🔹 Step 2. Functional Core Scenarios (Happy Path)
+- [✅] Reject missing JWT → 401 (AuthenticationIT)
+- [✅] Reject expired JWT → 401
+- [✅] Reject JWT with long TTL → 401
+- [✅] Reject invalid JWT format → 401
+- [✅] Reject unauthorized subject not on allowlist → 403 (AuthorizationIT)
+- [✅] Accept valid subject from allowlist → 200
+- [✅] JWT verification against EC public key (JwtTokenVerifierIntegrationIT)
+- [✅] Custom Spring Security filter with JWT parsing (JwtAuthFilter)
+- [✅] Token logic verified in unit test (JwtTokenVerifierSpec, JwtAuthenticationTokenSpec)
 
-- [✅] Valid request creates user with `READ_ONLY` permissions
-- [✅] User with `READ_WRITE` gets INSERT, UPDATE rights
-- [✅] User with `DELETE` gets DELETE right
-- [✅] TTL expiration removes user from DB
-- [✅] Response includes username/password only once
-- [✅] Username/password follow secure formats and are validated
-- [✅] Scheduled revocation logic removes expired access
-- [✅] Unsafe inputs (e.g., SQLi) are rejected and logged
-- [✅] All access and revocation events are written to audit log
+### ⚙️ Step 2: Input Validation (Request Validator)
+
+- [✅] Required fields: permissionLevel, durationMinutes, targetDatabase
+- [✅] permissionLevel: must be one of READ_ONLY, READ_WRITE, DELETE
+- [✅] durationMinutes: must be between 1 and 60
+- [✅] targetDatabase must be resolvable
+- [✅] Reject invalid request → 400 + details (AccessRequestEndpointValidationIT)
+- [✅] Multiple errors → return combined list
+- [✅] Accept valid request → 200
+- [✅] No excessive error details returned to client (GlobalExceptionHandlerIntegrationIT)
+
+### 🌐 Step 3: Functional Core Logic (Access Granting)
+
+- [✅] READ_ONLY → user with SELECT privilege (AccessRequestEndpointIT)
+- [✅] READ_WRITE → adds INSERT, UPDATE
+- [✅] DELETE → adds DELETE permission
+- [✅] Forbidden actions rejected based on permission
+- [✅] Revoke access after TTL via scheduler
+- [✅] Credentials only returned once
+- [✅] User roles removed after expiry
+- [✅] Safe failure handling if DB is unavailable (no exception thrown)
+- [✅] Invalid usernames/roles (SQL injection) → logged and skipped
+- [✅] Unsafe identifiers logged at ERROR level (logCaptured via LogCaptureAbility)
+- [✅] Credential generation tested in isolation (UserCredentialsGeneratorSpec)
+
+### 🧪 Step 4: PostgreSQL Specifics
+
+- [✅] Temporary users are visible in `pg_roles`
+- [✅] Permissions match selected level
+- [✅] Attempted forbidden operations (e.g. DROP) rejected
+- [✅] Users revoked automatically after TTL
+- [✅] Users with no roles are still revoked cleanly
+
+### 📝 Step 5: Audit Logging (MongoDB)
+
+- [✅] Audit log entry created for access request
+- [✅] Audit contains: requestor, target DB, username, permission, TTL
+- [✅] Password is NOT stored
+- [✅] Revoked status is properly updated
+- [✅] Invalid logs (e.g., unknown DB) are ignored, not removed
+
+### 🔎 Phase 6: Security Coverage
+
+- [✅] Code coverage over 80% (verified in SonarCloud)
+- [✅] Static Application Security Testing (SAST)
+- [ ] [Optional] GitHub Action: Penetration Test with OWASP ZAP or Burp Suite
 
 ---
-
-### ✅  Step 3. PostgreSQL – Role & Permissions Verification
-
-- [✅] User exists in `pg_roles`
-- [✅] Only granted allowed privileges (e.g. no DROP)
-- [✅] User is removed after TTL
-- [✅] `READ_ONLY` user cannot perform DELETE
-
----
-
-### ✅  Step 4. MongoDB – Audit Logging
-
-- [✅] Audit entry saved with requestor, username, and TTL
-- [✅] Audit entry includes permission level
-- [✅] Audit entry does not store the password
-- [✅] Audit log retains failed revocation entries (e.g. invalid user/DB)
-
----
-
-### 🔐 Phase 3: Security & Monitoring
-
-- [✅] Static Application Security Testing (SAST) via SonarCloud
-- [✅] Test coverage >80% (measured by SonarCloud)
-- [ ] [Optional] Integrate penetration testing tool (e.g. OWASP ZAP via GitHub Action)
-
----
-
 ## [TODO] 🐳 Running Locally with Docker Compose
 
 1. **Generate EC keys** for JWT (using OpenSSL):
