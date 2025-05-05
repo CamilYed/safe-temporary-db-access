@@ -1,6 +1,5 @@
 package pl.pw.cyber.dbaccess.web.accessrequest
 
-
 import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddAuditLogAbility
@@ -11,7 +10,6 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.SchedulingControlAbility
 import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
-import pl.pw.cyber.dbaccess.testing.dsl.builders.TemporaryAccessAuditLogBuilder
 
 import java.time.Duration
 
@@ -36,12 +34,12 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
     }
 
     def cleanup() {
-        stopDatabase()
+        stopDatabases()
     }
 
     def "should not create temporary user when database is resolvable but not running"() {
         given:
-            thereIs(aResolvableDatabase().withName("test_db"))
+            thereIs(aResolvableDatabase().databaseName("test_db"))
 
         when:
             def response = accessRequest(
@@ -56,7 +54,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
     def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
         given:
-            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+            resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("test_db"))
         and:
             publicSchemaOfDatabaseHasTable("test_db") {
                 table("orders") {
@@ -109,7 +107,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
     def "should create READ_WRITE user with correct privileges in PostgreSQL"() {
         given:
-            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+            resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("test_db"))
         and:
             publicSchemaOfDatabaseHasTable("test_db") {
                 table("orders") {
@@ -172,7 +170,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
     def "should create DELETE user with correct privileges in PostgreSQL"() {
         given:
-            resolvedDatabaseIsRunning(aResolvableDatabase().withName("test_db"))
+            resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("test_db"))
         and:
             publicSchemaOfDatabaseHasTable("test_db") {
                 table("orders") {
@@ -241,21 +239,49 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             theAuditLog { shouldBeEmpty() }
     }
 
-    def "should handle failure when revoking invalid audit log"() {
+    def "should handle failure when no resolving database"() {
         given:
-           thereIs(anExpiredInvalidAuditLog())
+            thereIs(anExpiredInvalidAuditLog())
+
+        and:
+            noAnyResolvableDatabases()
 
         when:
             manuallyTriggerScheduler()
 
         then:
             noExceptionThrown()
+    }
 
+    def "should handle failure when revoking invalid audit log"() {
+        given:
+           thereIs(anExpiredInvalidAuditLog().withTargetDatabase("test_db").withGrantedUsername("nonexistent_user"))
+
+        and:
+            resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("test_db"))
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            noExceptionThrown()
+    }
+
+
+    def "should handle failure when revoking due to postgres not available"() {
+        given:
+            thereIs(anExpiredInvalidAuditLog())
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            noExceptionThrown()
     }
 
     def "should create audit log entry upon successful access request"() {
         given:
-            resolvedDatabaseIsRunning(aResolvableDatabase().withName("audit_test_db"))
+            resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("audit_test_db"))
         and:
             theAuditLog { shouldBeEmpty() }
         and:
@@ -290,7 +316,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         given:
             currentTimeIs("2025-05-03T14:00:00Z")
         and:
-            resolvedDatabaseIsRunning(aResolvableDatabase().withName("revoke_db"))
+            resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("revoke_db"))
         and:
             publicSchemaOfDatabaseHasTable("revoke_db") {
                 table("orders") {
@@ -360,4 +386,46 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 }
             }
     }
+
+    def "should revoke user when no roles are assigned"() {
+        given:
+            resolvedDatabaseIsRunning(
+                    aResolvableDatabase()
+                            .databaseName("roleless_db")
+                            .databaseUserName("admin_user")
+            )
+
+        and:
+            thereIs(anExpiredInvalidAuditLog()
+                    .withTargetDatabase("roleless_db")
+                    .withGrantedUsername("roleless_user")
+            )
+
+        and:
+            thereIsUserInDatabase("roleless_db") {
+                withUsername("roleless_user")
+                withPassword("irrelevant")
+            }
+
+        and:
+            currentUserOfDb("roleless_db") {
+                hasName("admin_user")
+            }
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            noExceptionThrown()
+
+        and:
+            theAuditLog {
+                shouldHaveSingleEntry {
+                    hasGrantedForUser("roleless_user")
+                    hasTargetDatabase("roleless_db")
+                    hasRevokedStatus()
+                }
+            }
+    }
+
 }

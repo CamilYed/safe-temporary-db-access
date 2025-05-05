@@ -93,14 +93,14 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
 
     @Override
     public void revokeTemporaryUser(String username, String targetDatabase) {
-        var db = JdbcTemplateBuilder.from(databaseConfigurationProvider.resolve(targetDatabase));
-        var jdbc = db.getJdbcTemplate();
-        var quotedUser = doubleQuote(username);
-        var quotedDb = doubleQuote(targetDatabase);
-        var currentUser = jdbc.queryForObject("SELECT CURRENT_USER", String.class);
-        var revokeStatements = revokeStatements(currentUser, quotedUser, quotedDb);
-
         try {
+            var db = JdbcTemplateBuilder.from(databaseConfigurationProvider.resolve(targetDatabase));
+            var jdbc = db.getJdbcTemplate();
+            var quotedUser = doubleQuote(username);
+            var quotedDb = doubleQuote(targetDatabase);
+            var currentUser = jdbc.queryForObject("SELECT CURRENT_USER", String.class);
+            var revokeStatements = revokeStatements(currentUser, quotedUser, quotedDb);
+
             for (var sql : revokeStatements) {
                 jdbc.execute(sql);
             }

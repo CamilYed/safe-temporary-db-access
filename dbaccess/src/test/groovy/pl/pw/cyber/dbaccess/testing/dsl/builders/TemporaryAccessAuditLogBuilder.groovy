@@ -9,15 +9,29 @@ import java.time.Instant
 @Builder(builderStrategy = SimpleStrategy, prefix = "with")
 class TemporaryAccessAuditLogBuilder {
     String requestedBy = "user"
-    String grantedUsername = "nonexistent_user"
-    String targetDatabase = "nonexistent_db"
+    String grantedUsername = "xxxxx"
+    String targetDatabase = "test_db"
     String permission = "READ_ONLY"
     Instant grantedAt = MovableClock.getInstance().instant()
-    Instant expiresAt = MovableClock.getInstance().instant().minusSeconds(1800)
+    Instant expiresAt = MovableClock.getInstance().instant()
     boolean revoked = false
 
     static TemporaryAccessAuditLogBuilder anExpiredInvalidAuditLog() {
         return new TemporaryAccessAuditLogBuilder()
+                .withGrantedUsername("nonexistent_user")
+                .withTargetDatabase("nonexistent_db")
+                .withGrantedAt(MovableClock.getInstance().instant())
+                .withExpiresAt(
+                        MovableClock.getInstance().instant().minusSeconds(1800)
+                )
+    }
+
+    static TemporaryAccessAuditLogBuilder activeAuditLog() {
+        return new TemporaryAccessAuditLogBuilder()
+                .withGrantedAt(MovableClock.getInstance().instant())
+                .withExpiresAt(
+                        MovableClock.getInstance().instant().plusSeconds(50)
+                )
     }
 
     TemporaryAccessAuditLog build() {
