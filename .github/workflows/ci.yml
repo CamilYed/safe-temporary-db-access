@@ -58,6 +58,9 @@ jobs:
           name: dbaccess-jar
           path: dbaccess/build/libs/*.jar
 
+      - name: List contents of JAR directory
+        run: ls -R dbaccess/build/libs
+
   docker-publish:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
