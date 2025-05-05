@@ -95,8 +95,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: Dockerfile
+          context: dbaccess
+          file: dbaccess/Dockerfile
           push: true
           tags: ${{ steps.vars.outputs.tags }}
           cache-from: type=gha
