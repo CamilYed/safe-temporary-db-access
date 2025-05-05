@@ -43,7 +43,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run tests and generate coverage
-        run: ./gradlew clean jacocoMergedReport --build-cache
+        run: ./gradlew clean jacocoMergedReport bootJar --build-cache
 
       - name: Run SonarQube analysis
         if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
