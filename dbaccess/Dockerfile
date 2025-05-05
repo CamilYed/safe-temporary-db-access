@@ -6,7 +6,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
 # Copy JAR
-COPY build/libs/dbaccess.jar app.jar
+COPY dbaccess/build/libs/dbaccess-0.0.1-SNAPSHOT.jar app.jar
 
 # Change ownership and drop privileges
 RUN chown -R appuser:appgroup /app
