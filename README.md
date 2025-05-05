@@ -20,6 +20,64 @@ The core idea: let developers request short-lived database access through a secu
 
 ---
 
+### 🔐 Temporary Credential Generation
+
+Every temporary access request generates **unique, cryptographically secure credentials**, designed to meet strong security and entropy requirements.
+
+**Username:**
+
+- 12 characters long
+- Lowercase letters and digits only (`[a-z0-9]`)
+- Example: `user7g5m9dzq`
+
+**Password:**
+
+- 16 characters long
+- Must include:
+   - At least 1 uppercase letter (A–Z)
+   - At least 1 lowercase letter (a–z)
+   - At least 1 digit (0–9)
+   - At least 1 special character (`!@#$%^&*()-_+=<>?`)
+- Contains at least 10 unique characters
+- High entropy (≥ 50 bits), safe against brute-force and predictable patterns
+- Example: `G7$pxR!dKmZ&20#b`
+
+Credential generation is tested for format and entropy strength.  
+[Credential Generation Test](https://github.com/CamilYed/safe-temporary-db-access/blob/main/dbaccess/src/test/groovy/pl/pw/cyber/dbaccess/adapters/generator/UserCredentialsGeneratorSpec.groovy)
+
+---
+
+### 📜 JWT Format & Cryptographic Constraints
+
+All access tokens must comply with strict security requirements:
+
+- **Signed using ECDSA with EC256 curve (prime256v1)**
+- **5 minutes maximum TTL (expiration limit)**
+- **Public key must be at least 256 bits**
+- **Unsigned tokens or other algorithms (e.g. RSA) are rejected**
+- **Claims must contain:**
+   - `sub` – username (subject)
+   - `iat` – issued at timestamp
+   - `exp` – expiration timestamp (≤ 5 min)
+   - `iss` – must be `"dbaccess-api"`
+   - `aud` – must include `"dbaccess-client"`
+
+Example JWT claims:
+
+```json
+{
+  "sub": "alice",
+  "iat": 1712491200,
+  "exp": 1712491500,
+  "iss": "dbaccess-api",
+  "aud": ["dbaccess-client"]
+}
+```
+
+These constraints are enforced in `JwtTokenVerifier.java` and thoroughly tested in:
+- [JwtTokenVerifierSpec.groovy](https://github.com/CamilYed/safe-temporary-db-access/blob/main/dbaccess/src/test/groovy/pl/pw/cyber/dbaccess/infrastructure/spring/security/JwtTokenVerifierSpec.groovy)
+- [JwtTokenVerifierIntegrationIT.groovy](https://github.com/CamilYed/safe-temporary-db-access/blob/main/dbaccess/src/integrationTest/groovy/pl/pw/cyber/dbaccess/infrastructure/spring/security/JwtTokenVerifierIntegrationIT.groovy)
+
 ## ✅ Project Checklist
 
 ### 🛠️ Phase 0: Setup
@@ -40,9 +98,18 @@ The core idea: let developers request short-lived database access through a secu
 - [✅] Reject invalid JWT format → 401
 - [✅] Reject unauthorized subject not on allowlist → 403 (AuthorizationIT)
 - [✅] Accept valid subject from allowlist → 200
-- [✅] JWT verification against EC public key (JwtTokenVerifierIntegrationIT)
-- [✅] Custom Spring Security filter with JWT parsing (JwtAuthFilter)
-- [✅] Token logic verified in unit test (JwtTokenVerifierSpec, JwtAuthenticationTokenSpec)
+- [✅] Accept token signed with valid EC private key → subject, issuer, audience verified
+- [✅] Verifies token signed with correct EC key
+- [✅] Rejects token signed with wrong EC key → "Invalid signature"
+- [✅] Rejects unsigned token → "Not a JWS header"
+- [✅] Rejects expired token → "Token expired"
+- [✅] Rejects RSA-signed token → "Invalid token"
+- [✅] Rejects token with incorrect `iss` → "Invalid issuer"
+- [✅] Rejects token with incorrect `aud` → "Invalid audience
+- [✅] Extracts subject from token → mapped to `Authentication.getPrincipal()`
+- [✅] Exposes raw JWT token via `Authentication.getCredentials()`
+- [✅] Marks authentication as valid (`isAuthenticated = true`)
+- [✅] Returns proper roles (`SimpleGrantedAuthority` list)
 
 ### ⚙️ Step 2: Input Validation (Request Validator)
 
@@ -66,8 +133,8 @@ The core idea: let developers request short-lived database access through a secu
 - [✅] User roles removed after expiry
 - [✅] Safe failure handling if DB is unavailable (no exception thrown)
 - [✅] Invalid usernames/roles (SQL injection) → logged and skipped
-- [✅] Unsafe identifiers logged at ERROR level (logCaptured via LogCaptureAbility)
-- [✅] Credential generation tested in isolation (UserCredentialsGeneratorSpec)
+- [✅] Unsafe identifiers logged at ERROR level
+- [✅] Credential generation tested in isolation
 
 ### 🧪 Step 4: PostgreSQL Specifics
 
