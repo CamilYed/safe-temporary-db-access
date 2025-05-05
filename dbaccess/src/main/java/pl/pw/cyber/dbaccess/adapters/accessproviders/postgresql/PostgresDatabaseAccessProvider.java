@@ -7,6 +7,7 @@ import pl.pw.cyber.dbaccess.domain.CreateTemporaryUserRequest;
 import pl.pw.cyber.dbaccess.domain.DatabaseAccessProvider;
 import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -90,129 +91,53 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
         jdbc.getJdbcTemplate().execute(sql);
     }
 
-    //    @Override
-//    public void revokeTemporaryUser(String username, String targetDatabase) {
-//        var resolvedDatabase = databaseConfigurationProvider.resolve(targetDatabase);
-//        var jdbc = JdbcTemplateBuilder.from(resolvedDatabase);
-//
-//        try {
-//            log.info("Checking privileges for user '{}' on database '{}'", username, targetDatabase);
-//
-//            // Revoke table privileges dynamically
-//            String revokeTablesSQL =
-//              "REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM " + doubleQuote(username) + ";";
-//            jdbc.update(revokeTablesSQL, Map.of());
-//
-//            // Revoke sequence privileges dynamically
-//            String revokeSequencesSQL =
-//              "REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM " + doubleQuote(username) + ";";
-//            jdbc.update(revokeSequencesSQL, Map.of());
-//
-//            // Revoke function privileges dynamically
-//            String revokeFunctionsSQL =
-//              "REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM " + doubleQuote(username) + ";";
-//            jdbc.update(revokeFunctionsSQL, Map.of());
-//
-//            // Revoke database privileges dynamically
-//            String revokeDatabaseSQL =
-//              "REVOKE ALL PRIVILEGES ON DATABASE " + targetDatabase + " FROM " + doubleQuote(username) + ";";
-//            jdbc.update(revokeDatabaseSQL, Map.of());
-//
-//            // Revoke default privileges dynamically
-//            String revokeDefaultPrivilegesSQL =
-//              "ALTER DEFAULT PRIVILEGES FOR ROLE " + doubleQuote(username) +
-//                " REVOKE ALL PRIVILEGES ON TABLES FROM " + doubleQuote(username) + ";";
-//            jdbc.update(revokeDefaultPrivilegesSQL, Map.of());
-//
-//            // Revoke role memberships dynamically
-//            String revokeRoleMembershipsSQL =
-//              "SELECT rolname FROM pg_catalog.pg_roles WHERE pg_has_role(:username, oid, 'member')";
-//
-//            var roles = jdbc.queryForList(revokeRoleMembershipsSQL, Map.of("username", username), String.class);
-//
-//            for (String role : roles) {
-//                String revokeRoleSQL = "REVOKE " + doubleQuote(role) + " FROM " + doubleQuote(username) + " ;" ;
-//                jdbc.update(revokeRoleSQL, Map.of());
-//                log.info("Revoked role '{}' from user '{}'", role, username);
-//            }
-//
-//
-//            // Finally, drop the role
-//            log.info("Dropping user role '{}' from database '{}'", username, targetDatabase);
-//            String dropRoleSQL = "DROP ROLE IF EXISTS " + doubleQuote(username);
-//            jdbc.update(dropRoleSQL, Map.of());
-//
-//            log.info("Successfully revoked and dropped user '{}' from database '{}'", username, targetDatabase);
-//        } catch (Exception e) {
-//            log.error("Unexpected error while revoking user '{}' from database '{}'", username, targetDatabase, e);
-//            throw new DatabaseUnexpectedError("Failed to revoke user: " + e.getMessage());
-//        }
-//    }
-//
     @Override
     public void revokeTemporaryUser(String username, String targetDatabase) {
-        var resolvedDatabase = databaseConfigurationProvider.resolve(targetDatabase);
-        var jdbc = JdbcTemplateBuilder.from(resolvedDatabase);
+        var db = JdbcTemplateBuilder.from(databaseConfigurationProvider.resolve(targetDatabase));
+        var jdbc = db.getJdbcTemplate();
+        var quotedUser = doubleQuote(username);
+        var quotedDb = doubleQuote(targetDatabase);
+        var currentUser = jdbc.queryForObject("SELECT CURRENT_USER", String.class);
+        var revokeStatements = revokeStatements(currentUser, quotedUser, quotedDb);
 
         try {
-            log.info("Revoking user '{}' from database '{}'", username, targetDatabase);
+            for (var sql : revokeStatements) {
+                jdbc.execute(sql);
+            }
 
-            String someUserSQL = "SELECT CURRENT_USER;";
-            String someUser = jdbc.getJdbcTemplate().queryForObject(someUserSQL, String.class);
-
-            // 1. Revoke direct privileges
-            jdbc.update("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM " + doubleQuote(username), Map.of());
-            jdbc.update("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM " + doubleQuote(username), Map.of());
-            jdbc.update("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM " + doubleQuote(username), Map.of());
-            jdbc.update("REVOKE ALL PRIVILEGES ON DATABASE " + targetDatabase + " FROM " + doubleQuote(username), Map.of());
-            jdbc.update("REVOKE USAGE ON SCHEMA public FROM " + doubleQuote(username), Map.of());
-
-            // 2. Revoke default privileges granted BY user TO self (for completeness)
-            jdbc.update("ALTER DEFAULT PRIVILEGES FOR ROLE " + doubleQuote(username) +
-              " IN SCHEMA public REVOKE ALL ON TABLES FROM " + doubleQuote(username), Map.of());
-
-            // 3. Revoke default privileges granted BY someUser TO user (this fixes your error)
-            jdbc.getJdbcTemplate().execute(
-              "ALTER DEFAULT PRIVILEGES FOR ROLE " + doubleQuote(someUser) +
-                " IN SCHEMA public REVOKE ALL ON TABLES FROM " + doubleQuote(username)
-            );
-            jdbc.getJdbcTemplate().execute(
-              "ALTER DEFAULT PRIVILEGES FOR ROLE " + doubleQuote(someUser) +
-                " IN SCHEMA public REVOKE ALL ON SEQUENCES FROM " + doubleQuote(username)
-            );
-            jdbc.getJdbcTemplate().execute(
-              "ALTER DEFAULT PRIVILEGES FOR ROLE " + doubleQuote(someUser) +
-                " IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM " + doubleQuote(username)
+            var roles = db.queryForList(
+              " SELECT rolname FROM pg_catalog.pg_roles WHERE pg_has_role(:username, oid, 'member')",
+              Map.of("username", username), String.class
             );
 
-            // 4. Reassign ownership of any objects owned by the temp user
-            jdbc.update("REASSIGN OWNED BY " + doubleQuote(username) + " TO " + doubleQuote(someUser), Map.of());
-
-            // 5. Revoke any role memberships
-            String queryMemberships = """
-            SELECT rolname FROM pg_catalog.pg_roles
-            WHERE pg_has_role(:username, oid, 'member')
-        """;
-            var roles = jdbc.queryForList(queryMemberships, Map.of("username", username), String.class);
-            for (String role : roles) {
-                if (!role.equals(someUser)) {
-                    jdbc.update("REVOKE " + doubleQuote(role) + " FROM " + doubleQuote(username), Map.of());
-                    log.info("Revoked role '{}' from user '{}'", role, username);
+            for (var role : roles) {
+                if (!role.equals(currentUser)) {
+                    jdbc.execute("REVOKE " + doubleQuote(role) + " FROM " + quotedUser);
                 }
             }
 
-            // 6. Drop role
-            jdbc.update("DROP ROLE IF EXISTS " + doubleQuote(username), Map.of());
-            log.info("Successfully revoked and dropped user '{}' from database '{}'", username, targetDatabase);
-
+            jdbc.execute("DROP ROLE IF EXISTS " + quotedUser);
+            log.info("User '{}' revoked and dropped from '{}'", username, targetDatabase);
         } catch (Exception e) {
-            log.error("Unexpected error while revoking user '{}' from database '{}'", username, targetDatabase, e);
+            log.error("Error revoking user '{}' from '{}'", username, targetDatabase, e);
             throw new DatabaseUnexpectedError("Failed to revoke user: " + e.getMessage());
         }
     }
 
-    private String singleQuote(String value) {
-        return "'" + value + "'";
+    private List<String> revokeStatements(String currentUser, String quotedUser, String quotedDb) {
+        var quotedCurrentUser = doubleQuote(currentUser);
+        return List.of(
+          "REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM " + quotedUser,
+          "REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM " + quotedUser,
+          "REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM " + quotedUser,
+          "REVOKE ALL PRIVILEGES ON DATABASE " + quotedDb + " FROM " + quotedUser,
+          "REVOKE USAGE ON SCHEMA public FROM " + quotedUser,
+          "ALTER DEFAULT PRIVILEGES FOR ROLE " + quotedUser + " IN SCHEMA public REVOKE ALL ON TABLES FROM " + quotedUser,
+          "ALTER DEFAULT PRIVILEGES FOR ROLE " + quotedCurrentUser + " IN SCHEMA public REVOKE ALL ON TABLES FROM " + quotedUser,
+          "ALTER DEFAULT PRIVILEGES FOR ROLE " + quotedCurrentUser + " IN SCHEMA public REVOKE ALL ON SEQUENCES FROM " + quotedUser,
+          "ALTER DEFAULT PRIVILEGES FOR ROLE " + quotedCurrentUser + " IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM " + quotedUser,
+          "REASSIGN OWNED BY " + quotedUser + " TO " + quotedCurrentUser
+        );
     }
 
     private String doubleQuote(String value) {

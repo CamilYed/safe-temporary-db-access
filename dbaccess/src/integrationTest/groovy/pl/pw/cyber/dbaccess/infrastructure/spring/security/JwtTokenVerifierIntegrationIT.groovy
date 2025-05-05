@@ -1,14 +1,12 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.fixtures.JwtTokenFixture
-import spock.lang.Specification
 
 import java.security.interfaces.ECPrivateKey
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = [JwtTokenTestConfig])
-class JwtTokenVerifierIntegrationIT extends Specification {
+class JwtTokenVerifierIntegrationIT extends MongoBaseIT {
 
     @Autowired
     private JwtTokenVerifier jwtTokenVerifier

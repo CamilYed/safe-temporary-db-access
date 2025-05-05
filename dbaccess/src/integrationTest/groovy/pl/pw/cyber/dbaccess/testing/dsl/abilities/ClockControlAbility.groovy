@@ -35,4 +35,8 @@ trait ClockControlAbility {
     MovableClock testClock() {
         return testClock
     }
+
+    void resetClock() {
+        currentTimeIs("2025-04-07T12:00:00Z")
+    }
 }

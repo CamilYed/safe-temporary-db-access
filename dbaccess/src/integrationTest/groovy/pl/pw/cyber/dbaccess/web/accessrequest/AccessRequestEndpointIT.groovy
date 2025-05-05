@@ -8,6 +8,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.SchedulingControlAbility
 import pl.pw.cyber.dbaccess.testing.dsl.assertions.DatabaseResultAssertion
 
 import java.time.Duration
@@ -23,7 +24,8 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         DatabaseResultAssertion,
         ExtractAccessResponseAbility,
         DatabaseSelectAbility,
-        MongoAuditAssertionAbility {
+        MongoAuditAssertionAbility,
+        SchedulingControlAbility {
 
     def setup() {
         thereIsUser("user")
@@ -313,6 +315,9 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
         when:
             timeElapsed(Duration.ofMinutes(1).plusSeconds(1))
+
+        and:
+            manuallyTriggerScheduler()
 
         then:
             eventually {

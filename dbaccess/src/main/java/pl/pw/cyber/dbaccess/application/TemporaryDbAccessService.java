@@ -72,7 +72,6 @@ public class TemporaryDbAccessService {
         return auditLog;
     }
 
-    @Scheduled(fixedRateString = "${dbaccess.revoke-schedule-ms}")
     public void revokeExpiredAccess() {
         var now = clock.instant();
         log.info("Running task to revoke expired access at {}", now);

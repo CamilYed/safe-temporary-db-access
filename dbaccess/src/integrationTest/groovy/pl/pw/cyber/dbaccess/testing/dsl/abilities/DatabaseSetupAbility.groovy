@@ -29,11 +29,12 @@ trait DatabaseSetupAbility {
 
     void resolvedDatabaseIsRunning(ResolvedDatabaseBuilder builder) {
         if (!startedContainers.containsKey(builder.name)) {
+            String callingMethod = Thread.currentThread().stackTrace[2].methodName
+            println "[Testcontainers] Method '${callingMethod}' is starting the database: ${builder.name}"
             PostgreSQLContainer container = new PostgreSQLContainer("postgres:16")
                     .withDatabaseName(builder.name)
                     .withUsername("someuser")
                     .withPassword("somepassword")
-                    .withReuse(true)
 
             container.start()
 

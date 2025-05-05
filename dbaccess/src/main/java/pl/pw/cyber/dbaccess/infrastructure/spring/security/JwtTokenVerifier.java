@@ -52,7 +52,7 @@ class JwtTokenVerifier {
     private JWTClaimsSet extractJwtClaimsSet(SignedJWT jwt) throws ParseException {
         var claims = jwt.getJWTClaimsSet();
         var now = Date.from(clock.instant());
-
+        log.info("Checking token, current time is: {}", now);
         // Check if the token is expired
         if (claims.getExpirationTime().before(now)) {
             log.warn("JWT expired: {}", claims.getSubject());

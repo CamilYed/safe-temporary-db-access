@@ -23,11 +23,13 @@ class TestJwtTokenGenerator {
     String generateToken(TestTokenBuilder builder) {
         Date now = Date.from(builder.issueTime)
         Date expiration = new Date(now.getTime() + builder.getTtl().toMillis())
+        println "Token issued at: ${now}"
+        println "Token expires at: ${expiration}"
 
         JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder()
                 .subject(builder.getSubject())
-                .issuer(builder.getIssuer() != null ? builder.getIssuer() : JwtKeyProperties.ISSUER)
-                .audience(builder.getAudience() != null ? builder.getAudience() : JwtKeyProperties.AUDIENCE)
+                .issuer(builder.getIssuer() != null ? builder.getIssuer() : JwtTokenVerifier.ISSUER)
+                .audience(builder.getAudience() != null ? builder.getAudience() : JwtTokenVerifier.AUDIENCE)
                 .issueTime(now)
                 .expirationTime(expiration)
 

@@ -18,6 +18,10 @@ class JwtAuthenticationToken extends AbstractAuthenticationToken {
         setAuthenticated(true);
     }
 
+    public JwtAuthenticationToken(String principal, String token, Collection<? extends GrantedAuthority> authorities) {
+        this(new User(principal), token, authorities);
+    }
+
     @Override
     public Object getCredentials() {
         return token;
