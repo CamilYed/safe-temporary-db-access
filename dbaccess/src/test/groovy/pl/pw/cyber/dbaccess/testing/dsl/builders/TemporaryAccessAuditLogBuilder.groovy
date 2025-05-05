@@ -16,6 +16,14 @@ class TemporaryAccessAuditLogBuilder {
     Instant expiresAt = MovableClock.getInstance().instant()
     boolean revoked = false
 
+    static TemporaryAccessAuditLogBuilder anExpiredAuditLog() {
+        return new TemporaryAccessAuditLogBuilder()
+                .withGrantedAt(MovableClock.getInstance().instant())
+                .withExpiresAt(
+                        MovableClock.getInstance().instant().minusSeconds(1800)
+                )
+    }
+
     static TemporaryAccessAuditLogBuilder anExpiredInvalidAuditLog() {
         return new TemporaryAccessAuditLogBuilder()
                 .withGrantedUsername("nonexistent_user")

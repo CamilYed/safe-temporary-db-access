@@ -9,9 +9,11 @@ import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Slf4j
 class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
+    private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[a-z0-9]{1,63}$");
 
     private final DatabaseConfigurationProvider databaseConfigurationProvider;
 
@@ -93,27 +95,34 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
 
     @Override
     public void revokeTemporaryUser(String username, String targetDatabase) {
+        validateIdentifier(username);
+
         try {
             var db = JdbcTemplateBuilder.from(databaseConfigurationProvider.resolve(targetDatabase));
             var jdbc = db.getJdbcTemplate();
+
             var quotedUser = doubleQuote(username);
             var quotedDb = doubleQuote(targetDatabase);
-            var currentUser = jdbc.queryForObject("SELECT CURRENT_USER", String.class);
-            var revokeStatements = revokeStatements(currentUser, quotedUser, quotedDb);
 
+            var currentUser = jdbc.queryForObject("SELECT CURRENT_USER", String.class);
+            validateIdentifier(currentUser);
+
+            var revokeStatements = revokeStatements(currentUser, quotedUser, quotedDb);
             for (var sql : revokeStatements) {
                 jdbc.execute(sql);
             }
 
             var roles = db.queryForList(
-              " SELECT rolname FROM pg_catalog.pg_roles WHERE pg_has_role(:username, oid, 'member')",
-              Map.of("username", username), String.class
+              "SELECT rolname FROM pg_catalog.pg_roles WHERE pg_has_role(:username, oid, 'member')",
+              Map.of("username", username),
+              String.class
             );
 
             for (var role : roles) {
-                if (!role.equals(currentUser)) {
-                    jdbc.execute("REVOKE " + doubleQuote(role) + " FROM " + quotedUser);
-                }
+                validateIdentifier(role);
+                if (role.equals(currentUser)) continue;
+
+                jdbc.execute("REVOKE " + doubleQuote(role) + " FROM " + quotedUser);
             }
 
             jdbc.execute("DROP ROLE IF EXISTS " + quotedUser);
@@ -121,6 +130,12 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
         } catch (Exception e) {
             log.error("Error revoking user '{}' from '{}'", username, targetDatabase, e);
             throw new DatabaseUnexpectedError("Failed to revoke user: " + e.getMessage());
+        }
+    }
+
+    private void validateIdentifier(String name) {
+        if (!SAFE_IDENTIFIER.matcher(name).matches()) {
+            throw new IllegalArgumentException("Unsafe identifier: " + name);
         }
     }
 

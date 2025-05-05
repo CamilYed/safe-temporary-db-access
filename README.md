@@ -22,7 +22,7 @@ The core idea: let developers request short-lived database access through a secu
 
 ## ✅ TODO (TDD-first)
 
-### 🔹 Phase 1: Project Setup
+### ✅  Phase 1: Project Setup
 
 - [✅] Initialize Spring Boot + Gradle project
 - [✅] Add Spock testing support
@@ -31,77 +31,108 @@ The core idea: let developers request short-lived database access through a secu
 
 ### ✅ Phase 2 – Integration Test Strategy Checklist
 
-#### 🔹 Step 0: Security & Authorization 
-
-- [✅] **Test**: only authorized users can request access (JWT + allowlist)
-- [✅] **Code**: implement Spring Security + JWT parser
-- [✅] **Test**: Missing JWT → 401 Unauthorized
-- [✅] **Test**: Expired or invalid JWT → 401 / 403
-- [✅] **Test**: JWT without sub → 400 or 403
-- [✅] **Test**: User not in allowlist → 403
-- [✅] **Test**: User in allowlist → 200 OK
-- [✅] **Code**: JWT parsing & token validator
-- [✅] **Code**: AuthorizedUsersRepository reading from YAML/JSON
-
-#### 🔹 Step 1 – Input Validation
-Code / Tests written:
-
-- [✅] permissionLevel is required
-
-- [✅] permissionLevel must be one of: READ_ONLY, READ_WRITE, DELETE
-
-- [✅] durationMinutes must be between 1 and 60
-
-- [✅] targetDatabase is required and must not be blank
-
-- [✅] targetDatabase must be resolvable (configured + env)
-
-Test cases:
-
-- [✅] Valid request returns 200
-
-- [✅] Missing permissionLevel → 400
-
-- [✅] Invalid permissionLevel → 400
-
-- [✅] durationMinutes = 0 → 400
-
-- [✅] targetDatabase is blank → 400
-
-- [✅] targetDatabase not found → 400
-
-- [✅] Multiple validation errors → 400 + error list
-
 #### 🔹 Step 2. Functional Core Scenarios (Happy Path)
 
-- [ ] 1 – Valid request creates user with `READ_ONLY` permissions
-- [ ] 2 – User with `READ_WRITE` gets INSERT, UPDATE rights
-- [ ] 3 – User with `DELETE` gets DELETE right
-- [ ] 4 – TTL expiration removes user from DB
-- [ ] 5 – Response includes username/password only once
+- [✅] Valid request creates user with `READ_ONLY` permissions
+- [✅] User with `READ_WRITE` gets INSERT, UPDATE rights
+- [✅] User with `DELETE` gets DELETE right
+- [✅] TTL expiration removes user from DB
+- [✅] Response includes username/password only once
+- [✅] Username/password follow secure formats and are validated
+- [✅] Scheduled revocation logic removes expired access
+- [✅] Unsafe inputs (e.g., SQLi) are rejected and logged
+- [✅] All access and revocation events are written to audit log
 
 ---
 
-#### 🔍 Step 3. PostgreSQL – Role & Permissions Verification
+### ✅  Step 3. PostgreSQL – Role & Permissions Verification
 
-- [ ] 16 – User exists in `pg_roles`
-- [ ] 17 – Only granted allowed privileges (e.g. no DROP)
-- [ ] 18 – User is removed after TTL
-- [ ] 19 – `READ_ONLY` user cannot perform DELETE
+- [✅] User exists in `pg_roles`
+- [✅] Only granted allowed privileges (e.g. no DROP)
+- [✅] User is removed after TTL
+- [✅] `READ_ONLY` user cannot perform DELETE
 
 ---
 
-#### 📦 Step 4. MongoDB – Audit Logging
+### ✅  Step 4. MongoDB – Audit Logging
 
-- [ ] 20 – Audit entry saved with requestor, username, and TTL
-- [ ] 21 – Audit entry includes permission level
-- [ ] 22 – Audit entry does not store the password
+- [✅] Audit entry saved with requestor, username, and TTL
+- [✅] Audit entry includes permission level
+- [✅] Audit entry does not store the password
+- [✅] Audit log retains failed revocation entries (e.g. invalid user/DB)
 
-### 🔹 Phase 3: Monitoring (Optional)
+---
 
-- [ ] Integrate Suricata (Docker container)
-- [ ] Add simple rule: detect `SELECT *` without `WHERE`, `DROP`, etc.
-- [ ] Log detected incidents
+### 🔐 Phase 3: Security & Monitoring
+
+- [✅] Static Application Security Testing (SAST) via SonarCloud
+- [✅] Test coverage >80% (measured by SonarCloud)
+- [ ] [Optional] Integrate penetration testing tool (e.g. OWASP ZAP via GitHub Action)
+
+---
+
+## [TODO] 🐳 Running Locally with Docker Compose
+
+1. **Generate EC keys** for JWT (using OpenSSL):
+
+```bash
+# Generate private key
+openssl ecparam -name prime256v1 -genkey -noout -out ec256-private.pem
+
+# Extract public key (in PEM)
+openssl ec -in ec256-private.pem -pubout -out ec256-public.pem
+
+# Convert public key to DER format (required by the app)
+openssl ec -in ec256-private.pem -pubout -outform DER -out ec256-public.der
+```
+
+2. **Set environment variables** (or `.env` file):
+
+```env
+TEST1_DB_URL=jdbc:postgresql://localhost:5432/test
+TEST1_DB_USERNAME=admin
+TEST1_DB_PASSWORD=admin
+```
+
+3. **Start with Docker Compose** (MongoDB + PostgreSQL):
+
+```bash
+docker-compose up -d
+./gradlew bootRun
+```
+
+4. **Login with a token**: JWT subject must be one of the users listed in `example-users.yaml`:
+
+```yaml
+allowlist:
+  - alice
+  - bob
+  - charlie
+```
+
+---
+
+## ✅ Static Configuration
+
+### example-users.yaml
+
+```yaml
+allowlist:
+  - alice
+  - bob
+  - charlie
+```
+
+### db-access.yaml
+
+```yaml
+db:
+  databases:
+    test1:
+      envPrefix: TEST1
+    test2:
+      envPrefix: TEST2
+```
 
 ---
 

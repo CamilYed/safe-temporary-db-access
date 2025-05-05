@@ -1,11 +1,13 @@
 package pl.pw.cyber.dbaccess.web.accessrequest
 
+import ch.qos.logback.classic.Level
 import pl.pw.cyber.dbaccess.testing.MongoBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddAuditLogAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.LogCaptureAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.SchedulingControlAbility
@@ -16,6 +18,7 @@ import java.time.Duration
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.AccessRequestJsonBuilder.anAccessRequest
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.ResolvedDatabaseBuilder.aResolvableDatabase
+import static pl.pw.cyber.dbaccess.testing.dsl.builders.TemporaryAccessAuditLogBuilder.anExpiredAuditLog
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.TemporaryAccessAuditLogBuilder.anExpiredInvalidAuditLog
 
 class AccessRequestEndpointIT extends MongoBaseIT implements
@@ -27,10 +30,12 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         DatabaseSelectAbility,
         MongoAuditAssertionAbility,
         SchedulingControlAbility,
-        AddAuditLogAbility {
+        AddAuditLogAbility,
+        LogCaptureAbility {
 
     def setup() {
         thereIsUser("user")
+        setupLogCapture("pl.pw.cyber.dbaccess.application.TemporaryDbAccessService")
     }
 
     def cleanup() {
@@ -392,24 +397,24 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             resolvedDatabaseIsRunning(
                     aResolvableDatabase()
                             .databaseName("roleless_db")
-                            .databaseUserName("admin_user")
+                            .databaseUserName("adming5m9dzq")
             )
 
         and:
             thereIs(anExpiredInvalidAuditLog()
                     .withTargetDatabase("roleless_db")
-                    .withGrantedUsername("roleless_user")
+                    .withGrantedUsername("user7g5m9dzq")
             )
 
         and:
             thereIsUserInDatabase("roleless_db") {
-                withUsername("roleless_user")
+                withUsername("user7g5m9dzq")
                 withPassword("irrelevant")
             }
 
         and:
             currentUserOfDb("roleless_db") {
-                hasName("admin_user")
+                hasName("adming5m9dzq")
             }
 
         when:
@@ -421,11 +426,60 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         and:
             theAuditLog {
                 shouldHaveSingleEntry {
-                    hasGrantedForUser("roleless_user")
+                    hasGrantedForUser("user7g5m9dzq")
                     hasTargetDatabase("roleless_db")
                     hasRevokedStatus()
                 }
             }
+    }
+
+    def "should log exception for unsafe username"() {
+        given:
+            def invalidUsername = "user; DROP DATABASE prod;"
+            def dbName = "safe_db"
+
+        and:
+            resolvedDatabaseIsRunning(aResolvableDatabase()
+                    .databaseName(dbName)
+                    .databaseUserName("adming5m9dzq")
+            )
+
+        and:
+            thereIsUserInDatabase(dbName) {
+                withUsername(invalidUsername)
+            }
+
+            thereIs(anExpiredAuditLog().withTargetDatabase(dbName).withGrantedUsername(invalidUsername))
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            logCaptured("Unsafe identifier", Level.ERROR)
+    }
+
+    def "should log for unsafe role name during revoke"() {
+        given:
+            def dbName = "unsafe_role_db"
+            resolvedDatabaseIsRunning(
+                    aResolvableDatabase()
+                            .databaseName(dbName)
+                            .databaseUserName("adming5m9dzq")
+            )
+
+        and:
+            thereIsUserInDatabase(dbName) {
+                withUsername("bad;role")
+            }
+
+        and:
+            thereIs(anExpiredAuditLog().withTargetDatabase(dbName).withGrantedUsername("bad;role"))
+
+        when:
+            manuallyTriggerScheduler()
+
+        then:
+            logCaptured("Unsafe identifier", Level.ERROR)
     }
 
 }
