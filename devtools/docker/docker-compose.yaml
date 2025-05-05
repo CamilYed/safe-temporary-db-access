@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   postgres:
-    image: postgres:15
+    image: postgres:16
     container_name: safe-access-postgres
     restart: unless-stopped
     environment:
@@ -22,20 +20,6 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
-
-  app:
-    image: safe-access-app:latest
-    container_name: safe-access-api
-    build:
-      context: ../..
-      dockerfile: dbaccess/Dockerfile
-    ports:
-      - "8080:8080"
-    env_file:
-      - ../../.env
-    depends_on:
-      - postgres
-      - mongo
 
 volumes:
   pgdata:
