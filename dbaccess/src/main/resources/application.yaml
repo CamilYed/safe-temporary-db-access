@@ -16,3 +16,6 @@ spring:
 
 jwt:
   public-key: ${PUBLIC_KEY_LOCATION}:""
+
+dbaccess:
+  revoke-schedule-ms: 60000

@@ -7,6 +7,7 @@ import org.springframework.test.context.ActiveProfiles
 import pl.pw.cyber.dbaccess.SafeTemporaryDbAccessApplication
 import pl.pw.cyber.dbaccess.infrastructure.spring.security.JwtTokenTestConfig
 import pl.pw.cyber.dbaccess.testing.config.TestConfig
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.ClockControlAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MakeRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.fakes.InMemoryUserRepository
 import spock.lang.Specification
@@ -19,7 +20,7 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
         classes = [SafeTemporaryDbAccessApplication, TestConfig, JwtTokenTestConfig]
 )
 @ActiveProfiles("test")
-abstract class BaseIT extends Specification implements MakeRequestAbility {
+abstract class BaseIT extends Specification implements MakeRequestAbility, ClockControlAbility {
 
     @Value('${local.server.port}')
     private int port
@@ -30,5 +31,6 @@ abstract class BaseIT extends Specification implements MakeRequestAbility {
     def setup() {
         setPort(port)
         inMemoryUserRepository.clear()
+        resetClock()
     }
 }

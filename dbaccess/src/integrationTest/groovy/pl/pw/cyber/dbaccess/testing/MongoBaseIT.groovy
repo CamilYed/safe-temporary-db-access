@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Import
+import org.springframework.stereotype.Component
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.support.TestPropertySourceUtils
 import org.testcontainers.containers.MongoDBContainer
@@ -27,19 +28,21 @@ class MongoBaseIT extends BaseIT {
     @Shared
     static MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:7.0")).withReuse(true)
 
+    @Component
     static class MongoDbInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
         @Override
         void initialize(ConfigurableApplicationContext configurableApplicationContext) {
             if (!mongoDBContainer.isRunning()) {
-               mongoDBContainer.start()
+                mongoDBContainer.start()
+                println "[Testcontainers] Starting mongo ${mongoDBContainer.containerName}"
             }
+            def mongoUri = mongoDBContainer.getReplicaSetUrl() + "?connectTimeoutMS=100&serverSelectionTimeoutMS=100"
             TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
                     configurableApplicationContext,
-                    "spring.data.mongodb.uri=" + mongoDBContainer.getReplicaSetUrl()
+                    "spring.data.mongodb.uri=" + mongoUri
             )
             println "[Testcontainers] MongoDB Initialized: ${mongoDBContainer.getReplicaSetUrl()}"
-
         }
     }
 }

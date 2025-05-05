@@ -41,7 +41,10 @@ project.ext.versions = [
         lombok          : '1.18.30',
         fluent_validator: '1.10.0',
         testcontainers  : '1.21.0',
-        awaitility      : '4.2.0'
+        awaitility      : '4.2.0',
+        mockito         : '5.11.0',
+        byte_buddy      : '1.14.12',
+        cglib           : '3.3.0'
 ]
 
 dependencies {
@@ -63,6 +66,9 @@ dependencies {
 
     testImplementation "org.apache.groovy:groovy:${versions.groovy}"
     testImplementation "org.spockframework:spock-core:${versions.spock}"
+    testImplementation "org.mockito:mockito-core:${versions.mockito}"
+    testImplementation "net.bytebuddy:byte-buddy:${versions.byte_buddy}"
+    testImplementation "cglib:cglib-nodep:${versions.cglib}"
 
     integrationTestCompileOnly  "org.projectlombok:lombok:${versions.lombok}"
     integrationTestImplementation "org.apache.groovy:groovy-json:${versions.groovy}"

@@ -29,13 +29,14 @@ class MongoTemplateAuditLogTestFetcher {
 
     private static TemporaryAccessAuditLog mapToDomainObject(MongoTemporaryAccessAuditLog mongo) {
         return TemporaryAccessAuditLog.builder()
-                .id(mongo.id()).requestedByUsername(mongo.requestedByUsername())
-                .grantedUsername(mongo.grantedUsername())
-                .targetDatabase(mongo.targetDatabase())
-                .permissionLevel(mongo.permissionLevel())
-                .grantedAt(mongo.grantedAt())
-                .expiresAt(mongo.expiresAt())
-                .revoked(mongo.revoked())
+                .withId(mongo.id())
+                .withRequestedByUsername(mongo.requestedByUsername())
+                .withGrantedUsername(mongo.grantedUsername())
+                .withTargetDatabase(mongo.targetDatabase())
+                .withPermissionLevel(mongo.permissionLevel())
+                .withGrantedAt(mongo.grantedAt())
+                .withExpiresAt(mongo.expiresAt())
+                .withRevoked(mongo.revoked())
                 .build();
     }
 }

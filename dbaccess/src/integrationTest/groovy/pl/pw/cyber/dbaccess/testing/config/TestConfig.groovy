@@ -3,6 +3,8 @@ package pl.pw.cyber.dbaccess.testing.config
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
+import pl.pw.cyber.dbaccess.application.RevokeScheduler
+import pl.pw.cyber.dbaccess.application.TemporaryDbAccessService
 import pl.pw.cyber.dbaccess.domain.DatabaseConfigurationProvider
 import pl.pw.cyber.dbaccess.domain.UserRepository
 import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
@@ -31,5 +33,26 @@ class TestConfig {
     @Primary
     DatabaseConfigurationProvider databaseConfigurationProvider() {
         return new FakeDatabaseConfigurationProvider()
+    }
+
+    @Bean
+    @Primary
+    RevokeScheduler revokeScheduler(TemporaryDbAccessService service) {
+        return new TestRevokeScheduler(service)
+    }
+
+    static class TestRevokeScheduler implements RevokeScheduler {
+
+        private final TemporaryDbAccessService service
+
+        TestRevokeScheduler(TemporaryDbAccessService service) {
+            this.service = service
+        }
+
+        @Override
+        void schedule() {
+            println "Test scheduler manually triggering revokeExpiredAccess"
+            service.revokeExpiredAccess()
+        }
     }
 }
