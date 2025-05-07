@@ -12,7 +12,7 @@ import pl.pw.cyber.dbaccess.infrastructure.spring.security.TestJwtTokenGenerator
 
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.TestTokenBuilder.aToken
 
-trait MakeRequestAbility {
+trait MakeRequestAbility implements ClockControlAbility {
 
     @Autowired
     private TestRestTemplate restTemplate
@@ -27,7 +27,7 @@ trait MakeRequestAbility {
     }
 
     String validToken(String user) {
-        return testJwtTokenGenerator.generateToken(aToken().withSubject(user))
+        return testJwtTokenGenerator.generateToken(aToken(testClock()).withSubject(user))
     }
 
     HttpRequestBuilder requestBuilder() {
