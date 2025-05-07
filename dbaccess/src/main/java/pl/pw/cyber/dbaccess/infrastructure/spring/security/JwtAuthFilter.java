@@ -1,6 +1,7 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,14 @@ import static pl.pw.cyber.dbaccess.infrastructure.spring.security.SecurityConfig
 
 @Slf4j
 class JwtAuthFilter extends OncePerRequestFilter {
-
+    private static final List<String> PUBLIC_PATHS = List.of(
+      "/swagger-ui.html",
+      "/swagger-ui",
+      "/swagger-ui/",
+      "/swagger-ui/index.html",
+      "/v3/api-docs",
+      "/v3/api-docs/"
+    );
     private final JwtTokenVerifier jwtTokenVerifier;
     private final UserRepository userRepository;
     private static final List<SimpleGrantedAuthority> DEFAULT_ROLE = List.of(new SimpleGrantedAuthority("ROLE_REQUESTER"));
@@ -31,8 +39,11 @@ class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException {
-
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+        if (PUBLIC_PATHS.stream().anyMatch(it -> request.getRequestURI().startsWith(it))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         var authHeader = request.getHeader("Authorization");
         if (isBearer(authHeader)) {
             var token = authHeader.substring(7);

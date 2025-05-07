@@ -11,10 +11,6 @@ class SwaggerDevProfileIT extends DevBaseIT implements
         AddExampleUserAbility,
         SwaggerRequestAbility {
 
-    def setup() {
-        thereIsUser("user")
-    }
-
     def "swagger should be available for dev profile"() {
         when:
             def response = requestedBy("user")
