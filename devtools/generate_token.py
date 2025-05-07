@@ -14,7 +14,7 @@ try:
     from rich import box
 except ModuleNotFoundError:
     print("📦 Required modules not found. Installing them now...")
-    subprocess.check_call(["pip", "install", "click", "pyjwt", "cryptography", "rich"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "click", "pyjwt", "cryptography", "rich"])
     import jwt
     import click
     from rich.console import Console
@@ -24,12 +24,18 @@ except ModuleNotFoundError:
     from rich.text import Text
     from rich import box
 
-os.environ["PYTHONIOENCODING"] = "utf-8"
+# Optional clipboard support
+try:
+    import pyperclip
+    CLIPBOARD_ENABLED = True
+except ImportError:
+    CLIPBOARD_ENABLED = False
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
+# === CONFIG ===
 KEY_DIR = os.path.join(".", "jwt")
 PRIVATE_KEY_PATH = os.path.join(KEY_DIR, "ec256-private.pem")
 PUBLIC_KEY_DER_PATH = os.path.join(KEY_DIR, "ec256-public.der")
@@ -52,6 +58,7 @@ ___/ / /_/ / / / / /_/ /_/ / /_/  __/ /      | |/ |/ /  (__  )  __/ /_/ / /_/ / 
 
 COPYRIGHT = Text("Safe Temporary DB Access © 2024 - https://github.com/CamilYed/safe-temporary-db-access", style="dim")
 
+# === UTILITIES ===
 def ensure_key_dir():
     os.makedirs(KEY_DIR, exist_ok=True)
 
@@ -100,7 +107,7 @@ def load_private_key():
 
 def install_deps():
     console.print("\n📦 Installing required Python packages...")
-    subprocess.check_call(["pip", "install", "-r", "devtools/requirements.txt"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "devtools/requirements.txt"])
     input("\nPress [Enter] to return to menu...")
 
 def show_keys():
@@ -121,8 +128,8 @@ def generate_keys_if_missing():
         generate_keys()
     else:
         console.print("[green]✅ Keys already exist.[/green]")
-        input("\nPress [Enter] to return to menu...")
 
+# === MAIN FEATURE: Generate Token ===
 def generate_token(subject):
     generate_keys_if_missing()
     private_key = load_private_key()
@@ -139,8 +146,15 @@ def generate_token(subject):
 
     token = jwt.encode(claims, private_key, algorithm="ES256")
 
-    console.print("\n[bold green]✅ JWT Token Generated[/bold green]")
-    console.print(Panel(token, title="🔐 Token", subtitle="Use this for API access", expand=False))
+    console.rule("[bold green]✅ JWT Token Generated")
+    console.print("[yellow]Paste this into Swagger 'Authorize' dialog (as Bearer token):[/yellow]\n")
+    console.print(f"[bold green]{token}[/bold green]\n")
+
+    if CLIPBOARD_ENABLED:
+        pyperclip.copy(token)
+        console.print("[green]📋 Token copied to clipboard![/green]\n")
+    else:
+        console.print("[yellow]⚠️ Install 'pyperclip' to enable automatic copying[/yellow]\n")
 
     claim_table = Table(title="📜 Token Claims", box=box.ROUNDED)
     claim_table.add_column("Claim", style="cyan", no_wrap=True)
@@ -154,6 +168,7 @@ def generate_token(subject):
     console.print(claim_table)
     input("\nPress [Enter] to return to menu...")
 
+# === OPTIONAL ===
 def run_dev_compose():
     console.print("\n📣 [bold]Running Docker Compose for local dev...[/bold]")
     try:
@@ -166,11 +181,11 @@ def run_image_compose():
     console.print("\n📣 [bold]Running Docker Compose with prebuilt image...[/bold]")
     try:
         subprocess.run(["docker-compose", "-f", "devtools/docker/docker-compose.image.yml", "up"], check=True)
-        subprocess.run(["docker-compose", "ps"], check=True)
     except subprocess.CalledProcessError:
         console.print("[red]❌ Failed to start docker-compose (image).[/red]")
     input("\nPress [Enter] to return to menu...")
 
+# === MENU ===
 def menu():
     while True:
         console.clear()
@@ -193,6 +208,7 @@ def menu():
                 install_deps()
             elif choice == "2":
                 generate_keys_if_missing()
+                input("\nPress [Enter] to return to menu...")
             elif choice == "3":
                 show_keys()
             elif choice == "4":
