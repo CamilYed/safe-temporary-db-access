@@ -52,7 +52,8 @@ class JwtAuthFilter extends OncePerRequestFilter {
                 var username = claims.getSubject();
 
                 if (username == null || username.isBlank()) {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid token");
+                    log.warn("Username is null or blank");
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid token");
                     return;
                 }
 

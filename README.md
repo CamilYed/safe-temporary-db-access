@@ -96,7 +96,9 @@ These constraints are enforced in `JwtTokenVerifier.java` and thoroughly tested 
 - [✅] Reject expired JWT → 401
 - [✅] Reject JWT with long TTL → 401
 - [✅] Reject invalid JWT format → 401
-- [✅] Reject unauthorized subject not on allowlist → 403 (AuthorizationIT)
+- [✅] Reject unauthorized subject not on allowlist → 403
+- [✅] Reject unauthorized subject due to null → 403 
+- [✅] Reject unauthorized subject due to blank → 403
 - [✅] Accept valid subject from allowlist → 200
 - [✅] Accept token signed with valid EC private key → subject, issuer, audience verified
 - [✅] Verifies token signed with correct EC key
