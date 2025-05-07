@@ -12,7 +12,7 @@ import pl.pw.cyber.dbaccess.infrastructure.spring.security.TestJwtTokenGenerator
 
 import static pl.pw.cyber.dbaccess.testing.dsl.builders.TestTokenBuilder.aToken
 
-trait MakeRequestAbility {
+trait MakeRequestAbility implements ClockControlAbility {
 
     @Autowired
     private TestRestTemplate restTemplate
@@ -27,7 +27,7 @@ trait MakeRequestAbility {
     }
 
     String validToken(String user) {
-        return testJwtTokenGenerator.generateToken(aToken().withSubject(user))
+        return testJwtTokenGenerator.generateToken(aToken(testClock()).withSubject(user))
     }
 
     HttpRequestBuilder requestBuilder() {
@@ -98,6 +98,17 @@ trait MakeRequestAbility {
             HttpEntity<Object> entity = new HttpEntity<>(JsonOutput.toJson(body), httpHeaders)
             String fullUrl = "http://localhost:${port}${url}"
             return restTemplate.exchange(fullUrl, method, entity, Map)
+        }
+
+        ResponseEntity<String> makeRequestForHtml() {
+            HttpHeaders httpHeaders = new HttpHeaders()
+            httpHeaders.setContentType(MediaType.valueOf(contentType))
+            httpHeaders.setAccept([MediaType.TEXT_HTML])
+            headers.each { k, v -> httpHeaders.set(k, v) }
+
+            HttpEntity<Object> entity = new HttpEntity<>(null, httpHeaders)
+            String fullUrl = "http://localhost:${port}${url}"
+            return restTemplate.exchange(fullUrl, method, entity, String)
         }
     }
 }

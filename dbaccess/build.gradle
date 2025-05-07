@@ -39,12 +39,14 @@ project.ext.versions = [
         postgres        : '42.7.1',
         nimbus_jose     : '10.1',
         lombok          : '1.18.30',
+        swagger         : '2.3.0',
         fluent_validator: '1.10.0',
         testcontainers  : '1.21.0',
         awaitility      : '4.2.0',
         mockito         : '5.11.0',
         byte_buddy      : '1.14.12',
-        cglib           : '3.3.0'
+        cglib           : '3.3.0',
+        jsoup           : '1.17.2'
 ]
 
 dependencies {
@@ -56,6 +58,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${versions.swagger}"
+
     implementation 'org.postgresql:postgresql'
     implementation 'org.springframework:spring-jdbc'
     implementation "com.nimbusds:nimbus-jose-jwt:${versions.nimbus_jose}"
@@ -80,6 +84,8 @@ dependencies {
     integrationTestImplementation "org.testcontainers:postgresql:${versions.testcontainers}"
     integrationTestImplementation "org.testcontainers:mongodb:${versions.testcontainers}"
     integrationTestImplementation "org.awaitility:awaitility:${versions.awaitility}"
+    integrationTestImplementation "org.jsoup:jsoup:${versions.jsoup}"
+
 
 }
 

@@ -37,6 +37,24 @@ class GlobalExceptionHandlerIntegrationIT extends MongoBaseIT implements
             response.body.detail == "Invalid input or argument"
     }
 
+    def "should return 404 when NoResourceFoundException is thrown"() {
+        given:
+            def token = generateToken(aToken().withSubject("user-1"))
+
+        when:
+            def response = requestBuilder()
+                    .withUrl("/fail/no-resource-found")
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .withMethod(POST)
+                    .makeRequest()
+
+        then:
+            assertThat(response).hasStatusCode(404)
+        and:
+            response.body.title == "Not Found"
+            response.body.path == "/fail/no-resource-found"
+    }
+
     def "should return 500 when unexpected Throwable is thrown"() {
         given:
             def token = generateToken(aToken().withSubject("user-1"))

@@ -37,4 +37,5 @@ out/
 .vscode/
 
 /devtools/jwt/ec256-private.pem
-/devtools/.env
+/devtools/jwt/ec256-public.der
+/devtools/jwt/ec256-public.pem
