@@ -48,4 +48,32 @@ class AuthorizationIT extends BaseIT implements
         and:
             warnLogCaptured("User: not-existing-user not found")
     }
+
+    def "should reject request if JWT subject is null"() {
+        given:
+            def token = generateToken(aToken().withSubject(null))
+
+        when:
+            def response = accessRequestBuilder()
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .makeRequest()
+        then:
+            assertThat(response).hasStatusCode(401)
+        and:
+            warnLogCaptured("Username is null or blank")
+    }
+
+    def "should reject request if JWT subject is blank"() {
+        given:
+            def token = generateToken(aToken().withSubject(" "))
+
+        when:
+            def response = accessRequestBuilder()
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .makeRequest()
+        then:
+            assertThat(response).hasStatusCode(401)
+        and:
+            warnLogCaptured("Username is null or blank")
+    }
 }

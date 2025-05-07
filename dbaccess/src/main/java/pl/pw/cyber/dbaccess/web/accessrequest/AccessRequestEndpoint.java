@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.web.accessrequest;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +35,7 @@ class AccessRequestEndpoint {
     }
 
     @PostMapping
+    @SecurityRequirement(name = "BearerAuth")
     ResponseEntity<?> requestAccess(@RequestBody AccessRequestJson accessRequestJson, Principal principal) {
         var validationResult = accessRequestJsonValidator.validate(accessRequestJson);
         if (validationResult instanceof Invalid invalid) {

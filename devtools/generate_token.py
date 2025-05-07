@@ -3,9 +3,11 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 
+# Auto-install dependencies
 try:
     import jwt
     import click
+    import pyperclip
     from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
@@ -13,18 +15,17 @@ try:
     from rich.text import Text
     from rich import box
 except ModuleNotFoundError:
-    print("📦 Required modules not found. Installing them now...")
-    subprocess.check_call(["pip", "install", "click", "pyjwt", "cryptography", "rich"])
+    print("📦 Installing missing dependencies...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "click", "pyjwt", "cryptography", "rich", "pyperclip"])
     import jwt
     import click
+    import pyperclip
     from rich.console import Console
     from rich.table import Table
     from rich.panel import Panel
     from rich.prompt import Prompt
     from rich.text import Text
     from rich import box
-
-os.environ["PYTHONIOENCODING"] = "utf-8"
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -40,14 +41,13 @@ AUDIENCE = "dbaccess-client"
 SUBJECTS = ["alice", "bob", "charlie"]
 
 console = Console()
-
 ASCII_HEADER = '''
-  _____             __        __                                  ____  ____    ____             _                    
- / ___/____  ____  / /_____ _/ /____  _____   _      __   _______/ __ \/ __ \  / __ \____ ______(_)___  ____  _____    
+  _____             __        __                                 ____  ____    ____             _                  
+ / ___/____  ____  / /_____ _/ /____  _____   _      __   _______/ __ \/ __ \  / __ \____ ______(_)___  ____  _____ 
  \__ \/ __ \/ __ \/ __/ __ `/ __/ _ \/ ___/  | | /| / /  / ___/ _  / / / / / / / / / __ `/ ___/ / __ \/ __ \/ ___/ 
 ___/ / /_/ / / / / /_/ /_/ / /_/  __/ /      | |/ |/ /  (__  )  __/ /_/ / /_/ / /_/ / /_/ (__  ) / /_/ / / / (__  )  
 /____/\____/_/ /_/\__/\__,_/\__/\___/_/       |__/|__/  /____/\___/\____/_____/_____/\__,_/____/_/ .___/_/ /_/____/   
-                                                                                     /_/                              
+                                                                                 /_/                                 
 '''
 
 COPYRIGHT = Text("Safe Temporary DB Access © 2024 - https://github.com/CamilYed/safe-temporary-db-access", style="dim")
@@ -87,8 +87,7 @@ def generate_keys():
     with open(PUBLIC_KEY_DER_PATH, "wb") as f:
         f.write(pub_der)
 
-    console.print("[green]✅ EC256 keys generated successfully.[/green]\n")
-    input("\nPress [Enter] to return to menu...")
+    console.print("[green]✅ EC256 keys generated successfully.[/green]")
 
 def load_private_key():
     with open(PRIVATE_KEY_PATH, "rb") as key_file:
@@ -97,11 +96,6 @@ def load_private_key():
             password=None,
             backend=default_backend()
         )
-
-def install_deps():
-    console.print("\n📦 Installing required Python packages...")
-    subprocess.check_call(["pip", "install", "-r", "devtools/requirements.txt"])
-    input("\nPress [Enter] to return to menu...")
 
 def show_keys():
     if not os.path.exists(PRIVATE_KEY_PATH):
@@ -119,9 +113,6 @@ def show_keys():
 def generate_keys_if_missing():
     if not os.path.exists(PRIVATE_KEY_PATH):
         generate_keys()
-    else:
-        console.print("[green]✅ Keys already exist.[/green]")
-        input("\nPress [Enter] to return to menu...")
 
 def generate_token(subject):
     generate_keys_if_missing()
@@ -139,8 +130,14 @@ def generate_token(subject):
 
     token = jwt.encode(claims, private_key, algorithm="ES256")
 
-    console.print("\n[bold green]✅ JWT Token Generated[/bold green]")
-    console.print(Panel(token, title="🔐 Token", subtitle="Use this for API access", expand=False))
+    console.print(Panel("Paste this into Swagger 'Authorize' dialog (as Bearer token):", style="cyan"))
+    console.print(Panel(token, title="🔐 Token", subtitle="JWT for Swagger", expand=False))
+
+    try:
+        pyperclip.copy(token)
+        console.print("[green]📋 Token copied to clipboard![/green]")
+    except Exception:
+        console.print("[yellow]⚠️ Install 'pyperclip' to enable auto-copy[/yellow]")
 
     claim_table = Table(title="📜 Token Claims", box=box.ROUNDED)
     claim_table.add_column("Claim", style="cyan", no_wrap=True)
@@ -150,7 +147,6 @@ def generate_token(subject):
     claim_table.add_row("exp", exp.isoformat() + " UTC")
     claim_table.add_row("iss", ISSUER)
     claim_table.add_row("aud", AUDIENCE)
-
     console.print(claim_table)
     input("\nPress [Enter] to return to menu...")
 
@@ -177,32 +173,29 @@ def menu():
         console.print(Panel(ASCII_HEADER, style="bold magenta"))
         console.print(COPYRIGHT)
         console.rule("🧪 [bold blue]Safe Temporary DB Access – CLI[/bold blue]", style="blue")
-        console.print("[bold]1.[/bold] Install Python Dependencies")
-        console.print("[bold]2.[/bold] Generate EC256 Keys (if missing)")
-        console.print("[bold]3.[/bold] Show Key Paths")
-        console.print("[bold]4.[/bold] Generate JWT Token")
-        console.print("[bold]5.[/bold] Run Docker Compose (Dev Build)")
-        console.print("[bold]6.[/bold] Run Docker Compose (Prebuilt Image)")
-        console.print("[bold red]7.[/bold red] Exit")
+        console.print("[bold]1.[/bold] Generate EC256 Keys (if missing)")
+        console.print("[bold]2.[/bold] Show Key Paths")
+        console.print("[bold]3.[/bold] Generate JWT Token")
+        console.print("[bold]4.[/bold] Run Docker Compose (Dev Build)")
+        console.print("[bold]5.[/bold] Run Docker Compose (Prebuilt Image)")
+        console.print("[bold red]6.[/bold red] Exit")
         console.rule(style="blue")
 
-        choice = Prompt.ask("\n[?] Choose an option", choices=["1", "2", "3", "4", "5", "6", "7"], default="7")
+        choice = Prompt.ask("\n[?] Choose an option", choices=["1", "2", "3", "4", "5", "6"], default="6")
 
         try:
             if choice == "1":
-                install_deps()
-            elif choice == "2":
                 generate_keys_if_missing()
-            elif choice == "3":
+            elif choice == "2":
                 show_keys()
-            elif choice == "4":
+            elif choice == "3":
                 subject = Prompt.ask("Enter subject", choices=SUBJECTS)
                 generate_token(subject)
-            elif choice == "5":
+            elif choice == "4":
                 run_dev_compose()
-            elif choice == "6":
+            elif choice == "5":
                 run_image_compose()
-            elif choice == "7":
+            elif choice == "6":
                 console.print("\n👋 [bold green]Goodbye![/bold green]")
                 break
         except subprocess.CalledProcessError as e:
