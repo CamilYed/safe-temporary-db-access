@@ -99,5 +99,16 @@ trait MakeRequestAbility {
             String fullUrl = "http://localhost:${port}${url}"
             return restTemplate.exchange(fullUrl, method, entity, Map)
         }
+
+        ResponseEntity<String> makeRequestForHtml() {
+            HttpHeaders httpHeaders = new HttpHeaders()
+            httpHeaders.setContentType(MediaType.valueOf(contentType))
+            httpHeaders.setAccept([MediaType.TEXT_HTML])
+            headers.each { k, v -> httpHeaders.set(k, v) }
+
+            HttpEntity<Object> entity = new HttpEntity<>(null, httpHeaders)
+            String fullUrl = "http://localhost:${port}${url}"
+            return restTemplate.exchange(fullUrl, method, entity, String)
+        }
     }
 }

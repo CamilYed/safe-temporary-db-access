@@ -7,6 +7,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import pl.pw.cyber.dbaccess.common.result.ResultExecutionException;
 
 import java.util.Optional;
@@ -24,6 +25,18 @@ class GlobalExceptionHandler {
         pd.setDetail("Invalid input or argument");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(pd);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ProblemDetail> handleNotFound(HttpServletRequest req, NoResourceFoundException ex) {
+        log.warn("🔍 Resource not found at {}: {}", req.getRequestURI(), ex.getMessage());
+
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problem.setTitle("Not Found");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("path", req.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
     }
 
     @ExceptionHandler(Throwable.class)

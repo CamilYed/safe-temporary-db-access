@@ -468,7 +468,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             )
 
         and:
-            thereIsUserInDatabase(dbName) {
+            thereIsUserInDatabase(dbName) {2
                 withUsername("bad;role")
             }
 
@@ -481,5 +481,4 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         then:
             logCaptured("Unsafe identifier", Level.ERROR)
     }
-
 }

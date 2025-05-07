@@ -1,11 +1,7 @@
-#!/usr/bin/env python
 import os
 import subprocess
 import sys
 from datetime import datetime, timedelta
-
-# Force UTF-8 output encoding
-os.environ["PYTHONIOENCODING"] = "utf-8"
 
 try:
     import jwt
@@ -17,20 +13,24 @@ try:
     from rich.text import Text
     from rich import box
 except ModuleNotFoundError:
-    print("\n📦 Required modules not found. Installing them now...\n")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "click", "pyjwt", "cryptography", "rich"])
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Installation failed: {e}")
-        sys.exit(1)
+    print("📦 Required modules not found. Installing them now...")
+    subprocess.check_call(["pip", "install", "click", "pyjwt", "cryptography", "rich"])
+    import jwt
+    import click
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.prompt import Prompt
+    from rich.text import Text
+    from rich import box
+
+os.environ["PYTHONIOENCODING"] = "utf-8"
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
-BASE_DIR = os.path.dirname(__file__)
-KEY_DIR = os.path.join(BASE_DIR, "jwt")
+KEY_DIR = os.path.join(".", "jwt")
 PRIVATE_KEY_PATH = os.path.join(KEY_DIR, "ec256-private.pem")
 PUBLIC_KEY_DER_PATH = os.path.join(KEY_DIR, "ec256-public.der")
 PUBLIC_KEY_PEM_PATH = os.path.join(KEY_DIR, "ec256-public.pem")
@@ -41,15 +41,14 @@ SUBJECTS = ["alice", "bob", "charlie"]
 
 console = Console()
 
-ASCII_HEADER = """
-[1;35m
-███████╗██╗   ██╗██████╗ ███████╗██████╗ ██╗   ██╗███╗   ██╗██╗  ██╗
-██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗██║   ██║████╗  ██║██║ ██╔╝
-███████╗██║   ██║██████╔╝█████╗  ██████╔╝██║   ██║██╔██╗ ██║█████╔╝ 
-╚════██║██║   ██║██╔═══╝ ██╔══╝  ██╔═══╝ ██║   ██║██║╚██╗██║██╔═██╗ 
-███████║╚██████╔╝██║     ███████╗██║     ╚██████╔╝██║ ╚████║██║  ██╗
-╚══════╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝
-"""
+ASCII_HEADER = '''
+  _____             __        __                                  ____  ____    ____             _                    
+ / ___/____  ____  / /_____ _/ /____  _____   _      __   _______/ __ \/ __ \  / __ \____ ______(_)___  ____  _____    
+ \__ \/ __ \/ __ \/ __/ __ `/ __/ _ \/ ___/  | | /| / /  / ___/ _  / / / / / / / / / __ `/ ___/ / __ \/ __ \/ ___/ 
+___/ / /_/ / / / / /_/ /_/ / /_/  __/ /      | |/ |/ /  (__  )  __/ /_/ / /_/ / /_/ / /_/ (__  ) / /_/ / / / (__  )  
+/____/\____/_/ /_/\__/\__,_/\__/\___/_/       |__/|__/  /____/\___/\____/_____/_____/\__,_/____/_/ .___/_/ /_/____/   
+                                                                                     /_/                              
+'''
 
 COPYRIGHT = Text("Safe Temporary DB Access © 2024 - https://github.com/CamilYed/safe-temporary-db-access", style="dim")
 
@@ -58,32 +57,38 @@ def ensure_key_dir():
 
 def generate_keys():
     ensure_key_dir()
-    console.print("\n[bold magenta]🔐 Generating EC256 key pair...[/bold magenta]")
+    console.print("\n[bold cyan]🔐 Generating EC256 key pair...[/bold cyan]")
     private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
 
+    pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
     with open(PRIVATE_KEY_PATH, "wb") as f:
-        f.write(private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
+        f.write(pem)
 
     pub_key = private_key.public_key()
 
+    pub_pem = pub_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    pub_der = pub_key.public_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
     with open(PUBLIC_KEY_PEM_PATH, "wb") as f:
-        f.write(pub_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ))
+        f.write(pub_pem)
 
     with open(PUBLIC_KEY_DER_PATH, "wb") as f:
-        f.write(pub_key.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ))
+        f.write(pub_der)
 
-    console.print("[bold green]✅ EC256 keys generated.[/bold green]\n")
-    input("Press [Enter] to return to menu...")
+    console.print("[green]✅ EC256 keys generated successfully.[/green]\n")
+    input("\nPress [Enter] to return to menu...")
 
 def load_private_key():
     with open(PRIVATE_KEY_PATH, "rb") as key_file:
@@ -93,10 +98,33 @@ def load_private_key():
             backend=default_backend()
         )
 
-def generate_token(subject):
+def install_deps():
+    console.print("\n📦 Installing required Python packages...")
+    subprocess.check_call(["pip", "install", "-r", "devtools/requirements.txt"])
+    input("\nPress [Enter] to return to menu...")
+
+def show_keys():
+    if not os.path.exists(PRIVATE_KEY_PATH):
+        console.print("[red]⚠️ No keys found.[/red]")
+    else:
+        table = Table(title="🔑 Key Paths", box=box.SQUARE)
+        table.add_column("Type", style="cyan", no_wrap=True)
+        table.add_column("Path", style="green")
+        table.add_row("Private Key", PRIVATE_KEY_PATH)
+        table.add_row("Public Key (PEM)", PUBLIC_KEY_PEM_PATH)
+        table.add_row("Public Key (DER)", PUBLIC_KEY_DER_PATH)
+        console.print(table)
+    input("\nPress [Enter] to return to menu...")
+
+def generate_keys_if_missing():
     if not os.path.exists(PRIVATE_KEY_PATH):
         generate_keys()
+    else:
+        console.print("[green]✅ Keys already exist.[/green]")
+        input("\nPress [Enter] to return to menu...")
 
+def generate_token(subject):
+    generate_keys_if_missing()
     private_key = load_private_key()
     now = datetime.utcnow()
     exp = now + timedelta(minutes=5)
@@ -111,29 +139,36 @@ def generate_token(subject):
 
     token = jwt.encode(claims, private_key, algorithm="ES256")
 
-    console.print("\n[bold cyan]✅ JWT Token Generated[/bold cyan]")
-    console.print(Panel(token, title="🔐 Encrypted Token", style="bold green", expand=False))
+    console.print("\n[bold green]✅ JWT Token Generated[/bold green]")
+    console.print(Panel(token, title="🔐 Token", subtitle="Use this for API access", expand=False))
 
-    claim_table = Table(title="📄 Claims", box=box.ROUNDED)
-    claim_table.add_column("Claim", style="bright_magenta")
+    claim_table = Table(title="📜 Token Claims", box=box.ROUNDED)
+    claim_table.add_column("Claim", style="cyan", no_wrap=True)
     claim_table.add_column("Value", style="white")
-    for k, v in claims.items():
-        claim_table.add_row(k, str(v))
+    claim_table.add_row("sub", subject)
+    claim_table.add_row("iat", now.isoformat() + " UTC")
+    claim_table.add_row("exp", exp.isoformat() + " UTC")
+    claim_table.add_row("iss", ISSUER)
+    claim_table.add_row("aud", AUDIENCE)
 
     console.print(claim_table)
     input("\nPress [Enter] to return to menu...")
 
 def run_dev_compose():
     console.print("\n📣 [bold]Running Docker Compose for local dev...[/bold]")
-    path = os.path.join(BASE_DIR, "docker/docker-compose.yml")
-    subprocess.run(["docker-compose", "-f", path, "up", "--build"], check=True)
+    try:
+        subprocess.run(["docker-compose", "-f", "devtools/docker/docker-compose.yml", "up", "--build"], check=True)
+    except subprocess.CalledProcessError:
+        console.print("[red]❌ Failed to start docker-compose (dev).[/red]")
     input("\nPress [Enter] to return to menu...")
 
 def run_image_compose():
     console.print("\n📣 [bold]Running Docker Compose with prebuilt image...[/bold]")
-    path = os.path.join(BASE_DIR, "docker/docker-compose.image.yml")
-    subprocess.run(["docker-compose", "-f", path, "up", "--build"], check=True)
-    subprocess.run(["docker-compose", "ps"], check=True)
+    try:
+        subprocess.run(["docker-compose", "-f", "devtools/docker/docker-compose.image.yml", "up"], check=True)
+        subprocess.run(["docker-compose", "ps"], check=True)
+    except subprocess.CalledProcessError:
+        console.print("[red]❌ Failed to start docker-compose (image).[/red]")
     input("\nPress [Enter] to return to menu...")
 
 def menu():
@@ -141,13 +176,13 @@ def menu():
         console.clear()
         console.print(Panel(ASCII_HEADER, style="bold magenta"))
         console.print(COPYRIGHT)
-        console.rule("🧪 [bold blue]Cyber Access Terminal[/bold blue]", style="blue")
-        console.print("[bold cyan]1.[/bold cyan] Install Python Dependencies")
-        console.print("[bold cyan]2.[/bold cyan] Generate EC256 Keys (if missing)")
-        console.print("[bold cyan]3.[/bold cyan] Show Key Paths")
-        console.print("[bold cyan]4.[/bold cyan] Generate JWT Token")
-        console.print("[bold cyan]5.[/bold cyan] Run Docker Compose (Dev Build)")
-        console.print("[bold cyan]6.[/bold cyan] Run Docker Compose (Prebuilt Image)")
+        console.rule("🧪 [bold blue]Safe Temporary DB Access – CLI[/bold blue]", style="blue")
+        console.print("[bold]1.[/bold] Install Python Dependencies")
+        console.print("[bold]2.[/bold] Generate EC256 Keys (if missing)")
+        console.print("[bold]3.[/bold] Show Key Paths")
+        console.print("[bold]4.[/bold] Generate JWT Token")
+        console.print("[bold]5.[/bold] Run Docker Compose (Dev Build)")
+        console.print("[bold]6.[/bold] Run Docker Compose (Prebuilt Image)")
         console.print("[bold red]7.[/bold red] Exit")
         console.rule(style="blue")
 
@@ -155,27 +190,11 @@ def menu():
 
         try:
             if choice == "1":
-                console.print("\n📦 Installing required Python packages...")
-                subprocess.check_call(["pip", "install", "-r", os.path.join(BASE_DIR, "requirements.txt")])
-                input("\nPress [Enter] to return to menu...")
+                install_deps()
             elif choice == "2":
-                if not os.path.exists(PRIVATE_KEY_PATH):
-                    generate_keys()
-                else:
-                    console.print("[green]✅ Keys already exist.[/green]")
-                    input("\nPress [Enter] to return to menu...")
+                generate_keys_if_missing()
             elif choice == "3":
-                if not os.path.exists(PRIVATE_KEY_PATH):
-                    console.print("[red]⚠ Keys not found.[/red]")
-                else:
-                    table = Table(title="🔑 Key Paths", box=box.SQUARE)
-                    table.add_column("Type", style="cyan", no_wrap=True)
-                    table.add_column("Path", style="green")
-                    table.add_row("Private Key", PRIVATE_KEY_PATH)
-                    table.add_row("Public Key (PEM)", PUBLIC_KEY_PEM_PATH)
-                    table.add_row("Public Key (DER)", PUBLIC_KEY_DER_PATH)
-                    console.print(table)
-                    input("\nPress [Enter] to return to menu...")
+                show_keys()
             elif choice == "4":
                 subject = Prompt.ask("Enter subject", choices=SUBJECTS)
                 generate_token(subject)
@@ -184,7 +203,7 @@ def menu():
             elif choice == "6":
                 run_image_compose()
             elif choice == "7":
-                console.print("\n👋 [bold green]Goodbye, hacker.[/bold green]")
+                console.print("\n👋 [bold green]Goodbye![/bold green]")
                 break
         except subprocess.CalledProcessError as e:
             console.print(f"[red]❌ Error running command: {e}[/red]")

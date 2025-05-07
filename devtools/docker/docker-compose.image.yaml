@@ -31,8 +31,10 @@ services:
       - "8080:8080"
     env_file:
       - ./../.env
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
     volumes:
-      - ../jwt/ec256-public.der:/devtools/jwt/ec256-public.der
+      - ./../jwt/ec256-public.der:/app/ec256-public.der
 
 volumes:
   pgdata:
