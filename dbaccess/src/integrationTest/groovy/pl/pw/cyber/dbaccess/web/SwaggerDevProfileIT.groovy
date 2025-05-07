@@ -1,14 +1,13 @@
 package pl.pw.cyber.dbaccess.web
 
-import org.springframework.test.context.ActiveProfiles
-import pl.pw.cyber.dbaccess.testing.MongoBaseIT
+
+import pl.pw.cyber.dbaccess.testing.DevBaseIT
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.SwaggerRequestAbility
 
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.HtmlAssertion.hasHtml
 
-@ActiveProfiles("dev")
-class SwaggerDevProfileIT extends MongoBaseIT implements
+class SwaggerDevProfileIT extends DevBaseIT implements
         AddExampleUserAbility,
         SwaggerRequestAbility {
 
