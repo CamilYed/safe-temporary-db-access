@@ -92,7 +92,7 @@ These constraints are enforced in `JwtTokenVerifier.java` and thoroughly tested 
 
 ### 🔐 Step 1: Auth & JWT
 
-- [✅] Reject missing JWT → 401 (AuthenticationIT)
+- [✅] Reject missing JWT → 401
 - [✅] Reject expired JWT → 401
 - [✅] Reject JWT with long TTL → 401
 - [✅] Reject invalid JWT format → 401
@@ -108,10 +108,6 @@ These constraints are enforced in `JwtTokenVerifier.java` and thoroughly tested 
 - [✅] Rejects RSA-signed token → "Invalid token"
 - [✅] Rejects token with incorrect `iss` → "Invalid issuer"
 - [✅] Rejects token with incorrect `aud` → "Invalid audience
-- [✅] Extracts subject from token → mapped to `Authentication.getPrincipal()`
-- [✅] Exposes raw JWT token via `Authentication.getCredentials()`
-- [✅] Marks authentication as valid (`isAuthenticated = true`)
-- [✅] Returns proper roles (`SimpleGrantedAuthority` list)
 
 ### ⚙️ Step 2: Input Validation (Request Validator)
 
@@ -119,10 +115,10 @@ These constraints are enforced in `JwtTokenVerifier.java` and thoroughly tested 
 - [✅] permissionLevel: must be one of READ_ONLY, READ_WRITE, DELETE
 - [✅] durationMinutes: must be between 1 and 60
 - [✅] targetDatabase must be resolvable
-- [✅] Reject invalid request → 400 + details (AccessRequestEndpointValidationIT)
+- [✅] Reject invalid request → 400 + details
 - [✅] Multiple errors → return combined list
 - [✅] Accept valid request → 200
-- [✅] No excessive error details returned to client (GlobalExceptionHandlerIntegrationIT)
+- [✅] No excessive error details returned to client
 
 ### 🌐 Step 3: Functional Core Logic (Access Granting)
 
