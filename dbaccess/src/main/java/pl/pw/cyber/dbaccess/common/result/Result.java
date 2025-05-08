@@ -59,6 +59,13 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
         };
     }
 
+    default Result<T> onSuccess(Runnable action) {
+        if (this instanceof Success<T>) {
+            action.run();
+        }
+        return this;
+    }
+
     default Result<T> onFailure(Function<ResultExecutionException, ?> handler) {
         if (this instanceof Failure<T>(ResultExecutionException exception)) {
             handler.apply(exception);

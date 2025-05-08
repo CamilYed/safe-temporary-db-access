@@ -1,3 +1,4 @@
+# Run all components without app - when we want to use for local development with running application in IntellijIDEA
 services:
   postgres:
     image: postgres:16

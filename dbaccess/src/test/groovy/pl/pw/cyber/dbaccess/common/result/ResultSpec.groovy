@@ -248,6 +248,31 @@ class ResultSpec extends Specification {
                     .hasCauseMessage("already wrapped")
     }
 
+    def "onSuccess should execute block only for success"() {
+        given:
+            def result = Result.success("ok")
+            def called = false
+
+        when:
+            result.onSuccess { called = true }
+
+        then:
+            called
+    }
+
+    def "onSuccess should not execute block for failure"() {
+        given:
+            def result = Result.failure(new IllegalArgumentException("fail"))
+            def called = false
+
+        when:
+            result.onSuccess { called = true }
+
+        then:
+            !called
+    }
+
+
     def "onFailure should execute block only for failure"() {
         given:
             def result = Result.failure(new IllegalArgumentException("fail"))

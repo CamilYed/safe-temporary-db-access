@@ -8,6 +8,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSelectAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ExtractAccessResponseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.LogCaptureAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.MetricAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.MongoAuditAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.RunOperationOnDatabaseAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.SchedulingControlAbility
@@ -31,7 +32,8 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
         MongoAuditAssertionAbility,
         SchedulingControlAbility,
         AddAuditLogAbility,
-        LogCaptureAbility {
+        LogCaptureAbility,
+        MetricAssertionAbility {
 
     def setup() {
         thereIsUser("user")
@@ -55,6 +57,13 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
         then:
             assertThat(response).hasStatusCode(500)
+        and:
+            metricWasExposed {
+                hasName("access_failed_total")
+                hasTag("database", "test_db")
+                hasTag("reason", "creation_error")
+                hasValueGreaterThan(0.0)
+            }
     }
 
     def "should create READ_ONLY user with correct privileges in PostgreSQL"() {
@@ -107,6 +116,13 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             dropShouldBeForbiddenFor {
                 table "orders"
                 usingCredentials credentials
+            }
+        and:
+            metricWasExposed {
+                hasName("access_success_total")
+                hasTag("database", "test_db")
+                hasTag("permission", "READ_ONLY")
+                hasValueGreaterThan(0.0)
             }
     }
 
@@ -171,6 +187,13 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 table "orders"
                 usingCredentials credentials
             }
+        and:
+            metricWasExposed {
+                hasName("access_success_total")
+                hasTag("database", "test_db")
+                hasTag("permission", "READ_WRITE")
+                hasValueGreaterThan(0.0)
+            }
     }
 
     def "should create DELETE user with correct privileges in PostgreSQL"() {
@@ -230,6 +253,13 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 table "orders"
                 usingCredentials credentials
             }
+        and:
+            metricWasExposed {
+                hasName("access_success_total")
+                hasTag("database", "test_db")
+                hasTag("permission", "DELETE")
+                hasValueGreaterThan(0.0)
+            }
     }
 
     def "should do nothing when there are no expired access logs"() {
@@ -246,7 +276,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
     def "should handle failure when no resolving database"() {
         given:
-            thereIs(anExpiredInvalidAuditLog())
+            thereIs(anExpiredInvalidAuditLog().withTargetDatabase("nonexistent_db"))
 
         and:
             noAnyResolvableDatabases()
@@ -256,11 +286,17 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
         then:
             noExceptionThrown()
+        and:
+            metricWasExposed {
+                hasName("revoke_failed_total")
+                hasTag("database", "nonexistent_db")
+                hasValueGreaterThan(0.0)
+            }
     }
 
     def "should handle failure when revoking invalid audit log"() {
         given:
-           thereIs(anExpiredInvalidAuditLog().withTargetDatabase("test_db").withGrantedUsername("nonexistent_user"))
+            thereIs(anExpiredInvalidAuditLog().withTargetDatabase("test_db").withGrantedUsername("nonexistent_user"))
 
         and:
             resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("test_db"))
@@ -270,18 +306,31 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
         then:
             noExceptionThrown()
-    }
 
+        and:
+            metricWasExposed {
+                hasName("revoke_failed_total")
+                hasTag("database", "test_db")
+                hasValueGreaterThan(0.0)
+            }
+    }
 
     def "should handle failure when revoking due to postgres not available"() {
         given:
-            thereIs(anExpiredInvalidAuditLog())
+            thereIs(anExpiredAuditLog().withTargetDatabase("test_db"))
 
         when:
             manuallyTriggerScheduler()
 
         then:
             noExceptionThrown()
+
+        and:
+            metricWasExposed {
+                hasName("revoke_failed_total")
+                hasTag("database", "test_db")
+                hasValueGreaterThan(0.0)
+            }
     }
 
     def "should create audit log entry upon successful access request"() {
@@ -385,9 +434,9 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                     doesNotHaveActiveSession(grantedUsername)
                 }
                 theAuditLog {
-                     shouldHaveSingleEntry {
-                         hasRevokedStatus()
-                     }
+                    shouldHaveSingleEntry {
+                        hasRevokedStatus()
+                    }
                 }
             }
     }
@@ -468,7 +517,8 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             )
 
         and:
-            thereIsUserInDatabase(dbName) {2
+            thereIsUserInDatabase(dbName) {
+                2
                 withUsername("bad;role")
             }
 
