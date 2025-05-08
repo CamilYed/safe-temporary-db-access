@@ -59,6 +59,13 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
         };
     }
 
+    default Result<T> onFailure(Function<ResultExecutionException, ?> handler) {
+        if (this instanceof Failure<T>(ResultExecutionException exception)) {
+            handler.apply(exception);
+        }
+        return this;
+    }
+
     default <R> Result<R> map(Function<? super T, ? extends R> mapper) {
         return switch (this) {
             case Success<T> s -> {
