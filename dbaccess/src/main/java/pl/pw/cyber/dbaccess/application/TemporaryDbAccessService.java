@@ -126,6 +126,7 @@ public class TemporaryDbAccessService {
             auditLogRepository.logTemporaryAccess(updatedLog);
 
             log.info("Revoked and updated audit log for '{}' (ID: {})", logEntry.grantedUsername(), logEntry.id());
+            countRevokeSuccessTotalMetric(logEntry.targetDatabase());
 
         } catch (Exception e) {
             log.error(
@@ -134,6 +135,13 @@ public class TemporaryDbAccessService {
             );
             countRevokeFailedTotalMetric(logEntry.targetDatabase());
         }
+    }
+
+    private void countRevokeSuccessTotalMetric(String targetDatabase) {
+        meterRegistry.counter(
+          "revoke_success_total",
+          "database", targetDatabase
+        ).increment();
     }
 
     private void countRevokeFailedTotalMetric(String targetDatabase) {

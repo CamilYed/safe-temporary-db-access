@@ -272,6 +272,11 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
         then:
             theAuditLog { shouldBeEmpty() }
+
+        and:
+            metricWasNotExposed {
+                hasName("revoke_success_total")
+            }
     }
 
     def "should handle failure when no resolving database"() {
@@ -439,6 +444,12 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                     }
                 }
             }
+        and:
+            metricWasExposed {
+                hasName("revoke_success_total")
+                hasTag("database", "revoke_db")
+                hasValueGreaterThan(0.0)
+            }
     }
 
     def "should revoke user when no roles are assigned"() {
@@ -479,6 +490,13 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                     hasTargetDatabase("roleless_db")
                     hasRevokedStatus()
                 }
+            }
+
+        and:
+            metricWasExposed {
+                hasName("revoke_success_total")
+                hasTag("database", "roleless_db")
+                hasValueGreaterThan(0.0)
             }
     }
 
