@@ -1,37 +1,43 @@
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta
 
-# Auto-install dependencies
+# === Auto-install required libraries ===
 try:
     import jwt
-    import click
     import pyperclip
     from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
     from rich.prompt import Prompt
+    from rich.panel import Panel
+    from rich.table import Table
     from rich.text import Text
-    from rich import box
+    from rich.progress import Progress, SpinnerColumn, TextColumn
 except ModuleNotFoundError:
-    print("📦 Installing missing dependencies...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "click", "pyjwt", "cryptography", "rich", "pyperclip"])
+    subprocess.check_call([
+        sys.executable, "-m", "pip", "install",
+        "click", "pyjwt", "cryptography", "rich", "pyperclip"
+    ])
     import jwt
-    import click
     import pyperclip
     from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
     from rich.prompt import Prompt
+    from rich.panel import Panel
+    from rich.table import Table
     from rich.text import Text
-    from rich import box
+    from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
-KEY_DIR = os.path.join(".", "jwt")
+# === Paths ===
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+KEY_DIR = os.path.join(BASE_DIR, "devtools", "jwt")
+DOCKER_DIR = os.path.join(BASE_DIR, "devtools", "docker")
+COMPOSE_DEV = os.path.join(DOCKER_DIR, "docker-compose.yaml")
+COMPOSE_IMG = os.path.join(DOCKER_DIR, "docker-compose.image.yaml")
 PRIVATE_KEY_PATH = os.path.join(KEY_DIR, "ec256-private.pem")
 PUBLIC_KEY_DER_PATH = os.path.join(KEY_DIR, "ec256-public.der")
 PUBLIC_KEY_PEM_PATH = os.path.join(KEY_DIR, "ec256-public.pem")
@@ -39,87 +45,65 @@ PUBLIC_KEY_PEM_PATH = os.path.join(KEY_DIR, "ec256-public.pem")
 ISSUER = "dbaccess-api"
 AUDIENCE = "dbaccess-client"
 SUBJECTS = ["alice", "bob", "charlie"]
-
 console = Console()
-ASCII_HEADER = '''
-  _____             __        __                                 ____  ____    ____             _                  
- / ___/____  ____  / /_____ _/ /____  _____   _      __   _______/ __ \/ __ \  / __ \____ ______(_)___  ____  _____ 
- \__ \/ __ \/ __ \/ __/ __ `/ __/ _ \/ ___/  | | /| / /  / ___/ _  / / / / / / / / / __ `/ ___/ / __ \/ __ \/ ___/ 
-___/ / /_/ / / / / /_/ /_/ / /_/  __/ /      | |/ |/ /  (__  )  __/ /_/ / /_/ / /_/ / /_/ (__  ) / /_/ / / / (__  )  
-/____/\____/_/ /_/\__/\__,_/\__/\___/_/       |__/|__/  /____/\___/\____/_____/_____/\__,_/____/_/ .___/_/ /_/____/   
-                                                                                 /_/                                 
-'''
 
-COPYRIGHT = Text("Safe Temporary DB Access © 2024 - https://github.com/CamilYed/safe-temporary-db-access", style="dim")
+LOGO = r"""
+  ________              __                         __                          ____  ____.________
+ /  _____/  ____  _____/  |_  ___________    ____ |  | __ ___________  ____   |    |/ _/_   \   _  \ 
+/   \  ____/ __ \ \__  \   __\/ __ \_  __ \  / ___\|  |/ // __ \_  __ \/ __ \  |      <  |   ||  | \/ 
+\    \_\  \  ___/  / __ \|  | \  ___/|  | \/ / /_/  >    <\  ___/|  | \/ /_/ /  |    |  \ |   ||  |__  
+ \______  /\___  >(____  /__|  \___  >__|    \___  /__|_ \\___  >__|  \____/   |____|__ \|___| \____/  
+        \/     \/      \/          \/        /_____/     \/    \/                   \/               
+"""
 
-def ensure_key_dir():
-    os.makedirs(KEY_DIR, exist_ok=True)
+def keys_exist():
+    return os.path.exists(PRIVATE_KEY_PATH) and os.path.exists(PUBLIC_KEY_DER_PATH)
 
 def generate_keys():
-    ensure_key_dir()
-    console.print("\n[bold cyan]🔐 Generating EC256 key pair...[/bold cyan]")
+    os.makedirs(KEY_DIR, exist_ok=True)
+    console.print("[bold cyan]\U0001F510 Generating EC256 key pair...[/bold cyan]")
     private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
-
-    pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption()
-    )
+    pem = private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption())
 
     with open(PRIVATE_KEY_PATH, "wb") as f:
         f.write(pem)
 
     pub_key = private_key.public_key()
-
-    pub_pem = pub_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-
-    pub_der = pub_key.public_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
+    pub_pem = pub_key.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+    pub_der = pub_key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
 
     with open(PUBLIC_KEY_PEM_PATH, "wb") as f:
         f.write(pub_pem)
-
     with open(PUBLIC_KEY_DER_PATH, "wb") as f:
         f.write(pub_der)
 
-    console.print("[green]✅ EC256 keys generated successfully.[/green]")
+    console.print("[green]\u2705 Keys generated successfully![/green]")
+    input("Press [Enter] to return to menu...")
 
 def load_private_key():
     with open(PRIVATE_KEY_PATH, "rb") as key_file:
-        return serialization.load_pem_private_key(
-            key_file.read(),
-            password=None,
-            backend=default_backend()
-        )
+        return serialization.load_pem_private_key(key_file.read(), password=None, backend=default_backend())
 
 def show_keys():
-    if not os.path.exists(PRIVATE_KEY_PATH):
-        console.print("[red]⚠️ No keys found.[/red]")
+    if not keys_exist():
+        console.print("[red]\u274C No keys found![/red]")
     else:
-        table = Table(title="🔑 Key Paths", box=box.SQUARE)
-        table.add_column("Type", style="cyan", no_wrap=True)
+        table = Table(title="\U0001F511 Key Info", box=None)
+        table.add_column("Type", style="cyan")
         table.add_column("Path", style="green")
         table.add_row("Private Key", PRIVATE_KEY_PATH)
-        table.add_row("Public Key (PEM)", PUBLIC_KEY_PEM_PATH)
-        table.add_row("Public Key (DER)", PUBLIC_KEY_DER_PATH)
+        table.add_row("Public PEM", PUBLIC_KEY_PEM_PATH)
+        table.add_row("Public DER", PUBLIC_KEY_DER_PATH)
         console.print(table)
-    input("\nPress [Enter] to return to menu...")
-
-def generate_keys_if_missing():
-    if not os.path.exists(PRIVATE_KEY_PATH):
-        generate_keys()
+    input("Press [Enter] to return to menu...")
 
 def generate_token(subject):
-    generate_keys_if_missing()
-    private_key = load_private_key()
+    if not keys_exist():
+        console.print("[red]\u274C Keys missing. Generate them first![/red]")
+        return
+
     now = datetime.utcnow()
     exp = now + timedelta(minutes=5)
-
     claims = {
         "sub": subject,
         "iat": now,
@@ -128,78 +112,97 @@ def generate_token(subject):
         "aud": [AUDIENCE]
     }
 
-    token = jwt.encode(claims, private_key, algorithm="ES256")
-
-    console.print(Panel("Paste this into Swagger 'Authorize' dialog (as Bearer token):", style="cyan"))
-    console.print(Panel(token, title="🔐 Token", subtitle="JWT for Swagger", expand=False))
-
+    token = jwt.encode(claims, load_private_key(), algorithm="ES256")
+    panel = Panel.fit(token, title="JWT Token", subtitle="Paste in Swagger > Authorize", style="cyan")
+    console.print(panel)
     try:
         pyperclip.copy(token)
-        console.print("[green]📋 Token copied to clipboard![/green]")
+        console.print("[green]\U0001F4CB Token copied to clipboard![/green]")
     except Exception:
-        console.print("[yellow]⚠️ Install 'pyperclip' to enable auto-copy[/yellow]")
+        console.print("[yellow]\u26A0\uFE0F Could not copy to clipboard[/yellow]")
 
-    claim_table = Table(title="📜 Token Claims", box=box.ROUNDED)
-    claim_table.add_column("Claim", style="cyan", no_wrap=True)
-    claim_table.add_column("Value", style="white")
-    claim_table.add_row("sub", subject)
-    claim_table.add_row("iat", now.isoformat() + " UTC")
-    claim_table.add_row("exp", exp.isoformat() + " UTC")
-    claim_table.add_row("iss", ISSUER)
-    claim_table.add_row("aud", AUDIENCE)
-    console.print(claim_table)
-    input("\nPress [Enter] to return to menu...")
+    table = Table(title="\U0001F4DC Token Claims", box=None)
+    table.add_column("Claim", style="magenta")
+    table.add_column("Value", style="white")
+    for k in claims:
+        table.add_row(k, str(claims[k]))
+    console.print(table)
+    input("Press [Enter] to return to menu...")
 
-def run_dev_compose():
-    console.print("\n📣 [bold]Running Docker Compose for local dev...[/bold]")
-    try:
-        subprocess.run(["docker-compose", "-f", "devtools/docker/docker-compose.yml", "up", "--build"], check=True)
-    except subprocess.CalledProcessError:
-        console.print("[red]❌ Failed to start docker-compose (dev).[/red]")
-    input("\nPress [Enter] to return to menu...")
+def clean_existing_container(name):
+    containers = subprocess.run(["docker", "ps", "-a", "--format", "{{.Names}}"], capture_output=True, text=True).stdout.splitlines()
+    if name in containers:
+        console.print(f"[yellow]⚠️ Removing existing container '{name}'[/yellow]")
+        subprocess.run(["docker", "rm", "-f", name])
 
-def run_image_compose():
-    console.print("\n📣 [bold]Running Docker Compose with prebuilt image...[/bold]")
-    try:
-        subprocess.run(["docker-compose", "-f", "devtools/docker/docker-compose.image.yml", "up"], check=True)
-        subprocess.run(["docker-compose", "ps"], check=True)
-    except subprocess.CalledProcessError:
-        console.print("[red]❌ Failed to start docker-compose (image).[/red]")
+def run_compose(file_path, project_name, message):
+    if not os.path.exists(file_path):
+        console.print(f"[red]\u274C Missing Docker Compose file: {file_path}[/red]")
+        input("Press [Enter] to return to menu...")
+        return
+    if not keys_exist():
+        console.print("[red]\u274C Keys are required before starting the project.[/red]")
+        input("Press [Enter] to return to menu...")
+        return
+
+    clean_existing_container("safe-access-mongo")
+    clean_existing_container("safe-access-postgres")
+
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as progress:
+        progress.add_task(description="Launching Docker Compose...", total=None)
+        subprocess.Popen(["docker-compose", "-f", file_path, "-p", project_name, "up", "--build"])
+        time.sleep(3)
+
+    console.print(Panel.fit(f"[green]\u2705 {project_name} started![/green]\n\n{message}", title="\U0001F7E2 Running", style="bold green"))
+    input("Press [Enter] to return to menu...")
+
+def stop_compose(compose_file, project_name):
+    full_path = os.path.abspath(os.path.join(DOCKER_DIR, compose_file))
+    if not os.path.exists(full_path):
+        console.print(f"[yellow]\u26A0\uFE0F Compose file not found: {full_path}[/yellow]")
+    else:
+        subprocess.run(["docker-compose", "-f", full_path, "-p", project_name, "down"], check=False)
+        console.print(f"[red]\U0001F534 '{project_name}' stopped successfully.[/red]")
     input("\nPress [Enter] to return to menu...")
 
 def menu():
     while True:
         console.clear()
-        console.print(Panel(ASCII_HEADER, style="bold magenta"))
-        console.print(COPYRIGHT)
-        console.rule("🧪 [bold blue]Safe Temporary DB Access – CLI[/bold blue]", style="blue")
-        console.print("[bold]1.[/bold] Generate EC256 Keys (if missing)")
-        console.print("[bold]2.[/bold] Show Key Paths")
-        console.print("[bold]3.[/bold] Generate JWT Token")
-        console.print("[bold]4.[/bold] Run Docker Compose (Dev Build)")
-        console.print("[bold]5.[/bold] Run Docker Compose (Prebuilt Image)")
-        console.print("[bold red]6.[/bold red] Exit")
-        console.rule(style="blue")
+        console.print(Panel(LOGO, title="safe-temporary-db-access", style="bold magenta"))
+        console.print("GitHub: [link=https://github.com/CamilYed/safe-temporary-db-access]https://github.com/CamilYed/safe-temporary-db-access[/link]\n")
 
-        choice = Prompt.ask("\n[?] Choose an option", choices=["1", "2", "3", "4", "5", "6"], default="6")
+        console.print("[bold green]1.[/bold green] Install Python Dependencies")
+        console.print("[bold green]2.[/bold green] Generate EC256 Keys (if missing)")
+        console.print("[bold green]3.[/bold green] Show Key Paths")
+        console.print("[bold green]4.[/bold green] Generate JWT Token")
+        console.print("[bold cyan]5.[/bold cyan] Run Docker Compose (Dev Build)")
+        console.print("[bold cyan]6.[/bold cyan] Run Docker Compose (Prebuilt Image)")
+        console.print("[bold red]7.[/bold red] Stop Docker Compose (Dev)")
+        console.print("[bold red]8.[/bold red] Stop Docker Compose (Prebuilt)")
+        console.print("[bold magenta]9.[/bold magenta] Exit")
 
-        try:
-            if choice == "1":
-                generate_keys_if_missing()
-            elif choice == "2":
-                show_keys()
-            elif choice == "3":
-                subject = Prompt.ask("Enter subject", choices=SUBJECTS)
-                generate_token(subject)
-            elif choice == "4":
-                run_dev_compose()
-            elif choice == "5":
-                run_image_compose()
-            elif choice == "6":
-                console.print("\n👋 [bold green]Goodbye![/bold green]")
-                break
-        except subprocess.CalledProcessError as e:
-            console.print(f"[red]❌ Error running command: {e}[/red]")
+        choice = Prompt.ask("\n[?] Choose an option", choices=[str(i) for i in range(1, 10)], default="9")
+
+        if choice == "1":
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", os.path.join(BASE_DIR, "devtools", "requirements.txt")])
+        elif choice == "2":
+            generate_keys()
+        elif choice == "3":
+            show_keys()
+        elif choice == "4":
+            subject = Prompt.ask("Enter subject", choices=SUBJECTS)
+            generate_token(subject)
+        elif choice == "5":
+            run_compose(COMPOSE_DEV, "safe-access-dev", "Run IntelliJ IDEA with profile: [bold cyan]dev[/bold cyan]")
+        elif choice == "6":
+            run_compose(COMPOSE_IMG, "safe-access-img", "Open in browser: [bold]http://127.0.0.1:8080/swagger-ui/index.html[/bold]")
+        elif choice == "7":
+            stop_compose("docker-compose.yaml", "safe-access-dev")
+        elif choice == "8":
+            stop_compose("docker-compose.image.yaml", "safe-access-img")
+        elif choice == "9":
+            console.print("\n\U0001F44B [bold green]Goodbye and good hacking![/bold green]")
+            break
 
 if __name__ == "__main__":
     menu()
