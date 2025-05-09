@@ -45,6 +45,11 @@ class SecurityConfig {
             .anyRequest().denyAll()
           )
           .httpBasic(Customizer.withDefaults())
+          /**
+           * CSRF is disabled only for the /actuator/prometheus endpoint,
+           * which is protected by HTTP Basic and restricted to GET requests by Prometheus.
+           * No sensitive state-changing operations are exposed, so the risk is mitigated.
+           */
           .csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }
