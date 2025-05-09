@@ -3,16 +3,25 @@ spring:
     allow-bean-definition-overriding: true
   application:
     name: "safe-temporary-db-access"
-  flyway:
-    baseline-on-migrate: true
-  datasource:
-    url: jdbc:postgresql://localhost:${POSTGRES_PORT}/test
-    username: ${DB_USER_NAME}:test
-    password: ${DB_PASSWORD}:db_password
-    driver-class-name: org.postgresql.Driver
   data:
     mongodb:
       uri: ${MONGO_URI:mongodb://localhost:27017/safe_access_audit}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: [ health,info,metrics,prometheus ]
+  observations:
+    key-values:
+      application: "safe-temporary-db-access"
+      instance: ${INSTANCE_ID:localhost}
+  endpoint:
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 jwt:
   public-key: ${PUBLIC_KEY_LOCATION:file:devtools/jwt/ec256-public.der}
@@ -23,3 +32,8 @@ dbaccess:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+logging:
+  level:
+    io.micrometer: DEBUG
+    org.springframework.boot.actuate.endpoint.web: DEBUG

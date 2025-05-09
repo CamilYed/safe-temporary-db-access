@@ -23,6 +23,40 @@ services:
     volumes:
       - mongodata:/data/db
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: safe-access-prometheus
+    env_file:
+      - ./../.env
+    volumes:
+      - ./../../observability/prometheus.local.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: safe-access-grafana
+    env_file:
+      - ./../.env
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=superStrongPassword123!
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/system-overview.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./../../observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./../../observability/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./../../observability/grafana/provisioning/dashboards/business:/etc/grafana/provisioning/dashboards/business
+      - ./../../observability/grafana/provisioning/dashboards/micrometer:/etc/grafana/provisioning/dashboards/micrometer
+      - ./../../observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./../../observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   pgdata:
   mongodata:
+  grafana-data:
