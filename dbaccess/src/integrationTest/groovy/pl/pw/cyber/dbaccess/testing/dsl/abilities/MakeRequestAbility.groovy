@@ -79,6 +79,11 @@ trait MakeRequestAbility implements ClockControlAbility {
             return this
         }
 
+        HttpRequestBuilder withBasicAuth(String username, String password) {
+            String encoded = "${username}:${password}".bytes.encodeBase64().toString()
+            return withHeader("Authorization", "Basic ${encoded}")
+        }
+
         HttpRequestBuilder withHeaders(Map<String, String> headers) {
             this.headers.putAll(headers)
             return this
@@ -104,6 +109,17 @@ trait MakeRequestAbility implements ClockControlAbility {
             HttpHeaders httpHeaders = new HttpHeaders()
             httpHeaders.setContentType(MediaType.valueOf(contentType))
             httpHeaders.setAccept([MediaType.TEXT_HTML])
+            headers.each { k, v -> httpHeaders.set(k, v) }
+
+            HttpEntity<Object> entity = new HttpEntity<>(null, httpHeaders)
+            String fullUrl = "http://localhost:${port}${url}"
+            return restTemplate.exchange(fullUrl, method, entity, String)
+        }
+
+        ResponseEntity<String> makeRequestForTextPlain() {
+            HttpHeaders httpHeaders = new HttpHeaders()
+            httpHeaders.setContentType(MediaType.valueOf(contentType))
+            httpHeaders.setAccept([MediaType.TEXT_PLAIN])
             headers.each { k, v -> httpHeaders.set(k, v) }
 
             HttpEntity<Object> entity = new HttpEntity<>(null, httpHeaders)

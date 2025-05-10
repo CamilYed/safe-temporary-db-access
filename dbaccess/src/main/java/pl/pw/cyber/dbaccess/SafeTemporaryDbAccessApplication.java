@@ -2,6 +2,7 @@ package pl.pw.cyber.dbaccess;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -12,7 +13,7 @@ import java.security.Security;
 @EnableScheduling
 @ConfigurationPropertiesScan
 @EnableConfigurationProperties
-@SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
+@SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class, DataSourceAutoConfiguration.class})
 public class SafeTemporaryDbAccessApplication {
 
     public static void main(String[] args) {

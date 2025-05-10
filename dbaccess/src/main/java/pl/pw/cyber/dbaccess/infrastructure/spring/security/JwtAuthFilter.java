@@ -40,10 +40,11 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        if (PUBLIC_PATHS.stream().anyMatch(it -> request.getRequestURI().startsWith(it))) {
+        if (isPublicPath(request.getRequestURI()) || isPrometheusPath(request.getRequestURI())) {
             filterChain.doFilter(request, response);
             return;
         }
+
         var authHeader = request.getHeader("Authorization");
         if (isBearer(authHeader)) {
             var token = authHeader.substring(7);
@@ -81,6 +82,14 @@ class JwtAuthFilter extends OncePerRequestFilter {
         } else {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
         }
+    }
+
+    private boolean isPublicPath(String path) {
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    }
+
+    private boolean isPrometheusPath(String path) {
+        return "/actuator/prometheus".equals(path);
     }
 
     private static boolean isBearer(String authHeader) {
