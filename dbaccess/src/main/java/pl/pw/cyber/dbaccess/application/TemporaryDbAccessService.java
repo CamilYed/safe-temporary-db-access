@@ -1,8 +1,9 @@
 package pl.pw.cyber.dbaccess.application;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import pl.pw.cyber.dbaccess.application.commands.GrantTemporaryAccessCommand;
 import pl.pw.cyber.dbaccess.application.results.TemporaryAccessGranted;
 import pl.pw.cyber.dbaccess.common.result.Result;
@@ -20,24 +21,38 @@ import java.time.Clock;
 public class TemporaryDbAccessService {
 
     private final Clock clock;
+    private final MeterRegistry meterRegistry;
     private final UserCredentialsGenerator credentialsGenerator;
     private final DatabaseAccessProvider databaseAccessProvider;
     private final TemporaryAccessAuditLogRepository auditLogRepository;
 
     public Result<TemporaryAccessGranted> accessRequest(GrantTemporaryAccessCommand command) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+
         return Result.of(() -> {
-            log.info("Granting temporary access to database '{}' for user '{}'", command.targetDatabase(), command.requestedBy());
+              log.info("Granting temporary access to database '{}' for user '{}'", command.targetDatabase(), command.requestedBy());
 
-            var credentials = createTemporaryUser(command);
-            var auditLog = logAccessGrant(command, credentials.username());
+              var credentials = createTemporaryUser(command);
+              var auditLog = logAccessGrant(command, credentials.username());
+              return new TemporaryAccessGranted(
+                command.targetDatabase(),
+                credentials.username(),
+                credentials.password(),
+                auditLog.expiresAt()
+              );
+          })
+          .onSuccess(() -> {
+              sample.stop(Timer.builder("access_grant_duration_seconds")
+                .description("Time taken to grant DB access")
+                .publishPercentileHistogram()
+                .register(meterRegistry));
 
-            return new TemporaryAccessGranted(
-              command.targetDatabase(),
-              credentials.username(),
-              credentials.password(),
-              auditLog.expiresAt()
-            );
-        });
+              countAccessSuccessTotalMetric(command);
+          })
+          .onFailure(ex -> {
+              countAccessFailedTotalMetric(command);
+              return ex;
+          });
     }
 
     private TemporaryCredentials createTemporaryUser(GrantTemporaryAccessCommand command) {
@@ -72,6 +87,24 @@ public class TemporaryDbAccessService {
         return auditLog;
     }
 
+    private void countAccessSuccessTotalMetric(GrantTemporaryAccessCommand command) {
+        meterRegistry.counter(
+          "access_success_total",
+          "database", command.targetDatabase(),
+          "permission", command.permissionLevel().name(),
+          "ttl", String.valueOf(command.duration().toMinutes())
+        ).increment();
+    }
+
+    private void countAccessFailedTotalMetric(GrantTemporaryAccessCommand command) {
+        meterRegistry.counter(
+          "access_failed_total",
+          "database", command.targetDatabase(),
+          "permission", command.permissionLevel().name(),
+          "ttl", String.valueOf(command.duration().toMinutes())
+        ).increment();
+    }
+
     public void revokeExpiredAccess() {
         var now = clock.instant();
         log.info("Running task to revoke expired access at {}", now);
@@ -104,9 +137,30 @@ public class TemporaryDbAccessService {
             auditLogRepository.logTemporaryAccess(updatedLog);
 
             log.info("Revoked and updated audit log for '{}' (ID: {})", logEntry.grantedUsername(), logEntry.id());
+            countRevokeSuccessTotalMetric(logEntry);
 
         } catch (Exception e) {
-            log.error("Failed to revoke access for '{}' (ID: {}): {}", logEntry.grantedUsername(), logEntry.id(), e.getMessage(), e);
+            log.error(
+              "Failed to revoke access for '{}' (ID: {}): {}",
+              logEntry.grantedUsername(), logEntry.id(), e.getMessage(), e
+            );
+            countRevokeFailedTotalMetric(logEntry);
         }
+    }
+
+    private void countRevokeSuccessTotalMetric(TemporaryAccessAuditLog entry) {
+        meterRegistry.counter(
+          "revoke_success_total",
+          "database", entry.targetDatabase(),
+          "permission", entry.permissionLevel()
+        ).increment();
+    }
+
+    private void countRevokeFailedTotalMetric(TemporaryAccessAuditLog entry) {
+        meterRegistry.counter(
+          "revoke_failed_total",
+          "database", entry.targetDatabase(),
+          "requestedBy", entry.requestedByUsername()
+        ).increment();
     }
 }

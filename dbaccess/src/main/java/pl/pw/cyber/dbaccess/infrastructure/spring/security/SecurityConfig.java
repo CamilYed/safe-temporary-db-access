@@ -6,10 +6,15 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.filter.DelegatingFilterProxy;
@@ -31,6 +36,25 @@ class SecurityConfig {
     }
 
     @Bean
+    @Order(1)
+    public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
+        http
+          .securityMatcher("/actuator/**")
+          .authorizeHttpRequests(authz -> authz
+            .requestMatchers("/actuator/prometheus").hasRole("METRICS_SCRAPER")
+            .anyRequest().denyAll()
+          )
+          .httpBasic(Customizer.withDefaults())
+          /**
+           * CSRF is disabled only for the /actuator/prometheus endpoint,
+           * which is protected by HTTP Basic and restricted to GET requests by Prometheus.
+           * No sensitive state-changing operations are exposed, so the risk is mitigated.
+           */
+          .csrf(AbstractHttpConfigurer::disable);
+        return http.build();
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         var profiles = Arrays.asList(environment.getActiveProfiles());
         boolean allowSwagger = isDevOrTestProfile(profiles) && isNotProd(profiles);
@@ -45,12 +69,14 @@ class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                   ).permitAll();
+              } else {
+                  auth.requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**"
+                  ).denyAll();
               }
-              auth.requestMatchers(
-                "/swagger-ui.html",
-                "/swagger-ui/**",
-                "/v3/api-docs/**"
-              ).denyAll();
+
               auth.anyRequest().authenticated();
           })
           .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -61,8 +87,24 @@ class SecurityConfig {
                 }
             })
           );
+        http.formLogin(Customizer.withDefaults());
         return http.build();
     }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        String username = environment.getProperty("PROMETHEUS_USER", "prometheus");
+        String passwordHash = environment.getProperty("PROMETHEUS_PASSWORD_HASH");
+
+        var user = User
+          .withUsername(username)
+          .password("{bcrypt}" + passwordHash)
+          .roles("METRICS_SCRAPER")
+          .build();
+
+        return new InMemoryUserDetailsManager(user);
+    }
+
 
     private static boolean isNotProd(List<String> profiles) {
         return !profiles.contains("prod");

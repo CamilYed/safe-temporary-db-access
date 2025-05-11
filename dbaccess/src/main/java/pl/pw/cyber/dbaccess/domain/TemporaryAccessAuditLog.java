@@ -1,12 +1,6 @@
 package pl.pw.cyber.dbaccess.domain;
 
-import lombok.Builder;
-import lombok.With;
-
 import java.time.Instant;
-
-import java.time.Instant;
-import java.util.Objects;
 
 public record TemporaryAccessAuditLog(
   String id,
