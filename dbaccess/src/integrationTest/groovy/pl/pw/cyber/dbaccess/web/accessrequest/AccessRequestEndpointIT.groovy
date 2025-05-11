@@ -52,6 +52,8 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             def response = accessRequest(
                     anAccessRequest()
                             .withTargetDatabase("test_db")
+                            .withPermissionLevel("READ_ONLY")
+                            .withDurationMinutes(10)
 
             )
 
@@ -61,7 +63,8 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             metricWasExposed {
                 hasName("access_failed_total")
                 hasTag("database", "test_db")
-                hasTag("reason", "creation_error")
+                hasTag("permission", "READ_ONLY")
+                hasTag("ttl", "10")
                 hasValueGreaterThan(0.0)
             }
     }

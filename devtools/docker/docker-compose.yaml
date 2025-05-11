@@ -1,8 +1,8 @@
 # Run all components without app - when we want to use for local development with running application in IntellijIDEA
 services:
-  postgres:
+  postgres1:
     image: postgres:16
-    container_name: safe-access-postgres
+    container_name: safe-access-postgres1
     restart: unless-stopped
     environment:
       POSTGRES_USER: admin
@@ -11,7 +11,20 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata1:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  postgres2:
+    image: postgres:16
+    container_name: safe-access-postgres2
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: test2
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata2:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   mongo:
@@ -57,6 +70,7 @@ services:
       - prometheus
 
 volumes:
-  pgdata:
+  pgdata1:
+  pgdata2:
   mongodata:
   grafana-data:

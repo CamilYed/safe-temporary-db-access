@@ -1,6 +1,7 @@
 package pl.pw.cyber.dbaccess.application;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.pw.cyber.dbaccess.application.commands.GrantTemporaryAccessCommand;
@@ -26,6 +27,8 @@ public class TemporaryDbAccessService {
     private final TemporaryAccessAuditLogRepository auditLogRepository;
 
     public Result<TemporaryAccessGranted> accessRequest(GrantTemporaryAccessCommand command) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+
         return Result.of(() -> {
               log.info("Granting temporary access to database '{}' for user '{}'", command.targetDatabase(), command.requestedBy());
 
@@ -38,12 +41,18 @@ public class TemporaryDbAccessService {
                 auditLog.expiresAt()
               );
           })
-          .onSuccess(() -> countAccessSuccessTotalMetric(command))
+          .onSuccess(() -> {
+              sample.stop(Timer.builder("access_grant_duration_seconds")
+                .description("Time taken to grant DB access")
+                .publishPercentileHistogram()
+                .register(meterRegistry));
+
+              countAccessSuccessTotalMetric(command);
+          })
           .onFailure(ex -> {
-                countAccessFailedTotalMetric(command.targetDatabase());
-                return ex;
-            }
-          );
+              countAccessFailedTotalMetric(command);
+              return ex;
+          });
     }
 
     private TemporaryCredentials createTemporaryUser(GrantTemporaryAccessCommand command) {
@@ -82,15 +91,17 @@ public class TemporaryDbAccessService {
         meterRegistry.counter(
           "access_success_total",
           "database", command.targetDatabase(),
-          "permission", command.permissionLevel().name()
+          "permission", command.permissionLevel().name(),
+          "ttl", String.valueOf(command.duration().toMinutes())
         ).increment();
     }
 
-    private void countAccessFailedTotalMetric(String targetDatabase) {
+    private void countAccessFailedTotalMetric(GrantTemporaryAccessCommand command) {
         meterRegistry.counter(
           "access_failed_total",
-          "database", targetDatabase,
-          "reason", "creation_error"
+          "database", command.targetDatabase(),
+          "permission", command.permissionLevel().name(),
+          "ttl", String.valueOf(command.duration().toMinutes())
         ).increment();
     }
 
@@ -126,28 +137,30 @@ public class TemporaryDbAccessService {
             auditLogRepository.logTemporaryAccess(updatedLog);
 
             log.info("Revoked and updated audit log for '{}' (ID: {})", logEntry.grantedUsername(), logEntry.id());
-            countRevokeSuccessTotalMetric(logEntry.targetDatabase());
+            countRevokeSuccessTotalMetric(logEntry);
 
         } catch (Exception e) {
             log.error(
               "Failed to revoke access for '{}' (ID: {}): {}",
               logEntry.grantedUsername(), logEntry.id(), e.getMessage(), e
             );
-            countRevokeFailedTotalMetric(logEntry.targetDatabase());
+            countRevokeFailedTotalMetric(logEntry);
         }
     }
 
-    private void countRevokeSuccessTotalMetric(String targetDatabase) {
+    private void countRevokeSuccessTotalMetric(TemporaryAccessAuditLog entry) {
         meterRegistry.counter(
           "revoke_success_total",
-          "database", targetDatabase
+          "database", entry.targetDatabase(),
+          "permission", entry.permissionLevel()
         ).increment();
     }
 
-    private void countRevokeFailedTotalMetric(String targetDatabase) {
+    private void countRevokeFailedTotalMetric(TemporaryAccessAuditLog entry) {
         meterRegistry.counter(
           "revoke_failed_total",
-          "database", targetDatabase
+          "database", entry.targetDatabase(),
+          "requestedBy", entry.requestedByUsername()
         ).increment();
     }
 }

@@ -71,143 +71,121 @@
   "links": [],
   "refresh": "30s",
   "rows": [
-
-
     {
+      "title": "Business Metrics Overview",
+      "type": "row",
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "panels": [
         {
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "mappings": [],
-              "thresholds": { "mode": "absolute", "steps": [{ "color": "gray", "value": null }, { "color": "green", "value": 1 }] },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
-          "id": 1,
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "orientation": "vertical"
-          },
-          "pluginVersion": "9.0.0",
+          "type": "barchart",
+          "title": "✅ Access Success by DB, Permission & TTL",
+          "id": 3001,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
           "targets": [
             {
-              "expr": "sum(access_success_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{database}} ({{permission}})",
-              "refId": "A"
+              "refId": "A",
+              "expr": "sum by(database, permission, ttl) (access_success_total{application=\"$application\", instance=\"$instance\"})"
             }
           ],
-          "title": "✅ Access Success",
-          "type": "stat"
+          "fieldConfig": {
+            "defaults": { "unit": "short", "decimals": 0 }
+          },
+          "options": {
+            "orientation": "vertical",
+            "xField": "database",
+            "groupByField": "permission",
+            "showLegend": true,
+            "legend": { "displayMode": "table", "placement": "bottom" }
+          }
         },
         {
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "unit": "short",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [{ "color": "gray", "value": null }, { "color": "red", "value": 1 }]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
-          "id": 2,
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-            "orientation": "vertical"
-          },
-          "pluginVersion": "9.0.0",
+          "type": "stat",
+          "title": "❌ Total Access Failures",
+          "id": 3002,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
           "targets": [
             {
-              "expr": "sum(access_failed_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{database}} ({{reason}})",
-              "refId": "A"
+              "refId": "A",
+              "expr": "sum(access_failed_total{application=\"$application\", instance=\"$instance\"})"
             }
           ],
-          "title": "❌ Access Failed",
-          "type": "stat"
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            }
+          }
         },
         {
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "unit": "short",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [{ "color": "gray", "value": null }, { "color": "green", "value": 1 }]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
-          "id": 3,
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-            "orientation": "vertical"
-          },
-          "pluginVersion": "9.0.0",
+          "type": "table",
+          "title": "📊 Access Failures by DB, Permission & TTL",
+          "id": 3003,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
           "targets": [
             {
-              "expr": "sum(revoke_success_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{database}}",
-              "refId": "A"
+              "refId": "A",
+              "expr": "sum by(database, permission, ttl) (access_failed_total{application=\"$application\", instance=\"$instance\"})"
             }
           ],
-          "title": "✅ Revoke Success",
-          "type": "stat"
+          "transformations": [
+            { "id": "labelsToFields", "options": { "mode": "columns" } },
+            { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
+          ]
         },
         {
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "fieldConfig": {
-            "defaults": {
-              "color": { "mode": "palette-classic" },
-              "unit": "short",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [{ "color": "gray", "value": null }, { "color": "red", "value": 1 }]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
-          "id": 4,
-          "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-            "orientation": "vertical"
-          },
-          "pluginVersion": "9.0.0",
+          "type": "barchart",
+          "title": "♻️ Revoke Success by DB & Permission",
+          "id": 3006,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
           "targets": [
             {
-              "expr": "sum(revoke_failed_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{database}}",
-              "refId": "A"
+              "refId": "A",
+              "expr": "sum by(database, permission) (revoke_success_total{application=\"$application\", instance=\"$instance\"})"
             }
           ],
-          "title": "❌ Revoke Failed",
-          "type": "stat"
+          "fieldConfig": {
+            "defaults": { "unit": "short", "decimals": 0 }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "xField": "database",
+            "groupByField": "permission",
+            "showLegend": true,
+            "legend": { "displayMode": "table", "placement": "bottom" }
+          }
+        },
+        {
+          "type": "table",
+          "title": "⚠️ Revoke Failures by DB & RequestedBy",
+          "id": 3007,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 14 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(database, requestedBy) (revoke_failed_total{application=\"$application\", instance=\"$instance\"})"
+            }
+          ],
+          "transformations": [
+            { "id": "labelsToFields", "options": { "mode": "columns" } },
+            { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
+          ]
         }
-      ],
-      "title": "Business Metrics",
-      "type": "row"
+      ]
     },
-
-
-
-
-
-
-
 
 
 
