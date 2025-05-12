@@ -6,6 +6,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ClockControlAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.DatabaseSetupAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.LogCaptureAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.MetricAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.TokenGenerationAbility
 
 import static pl.pw.cyber.dbaccess.testing.dsl.assertions.ResponseAssertion.assertThat
@@ -18,8 +19,8 @@ class AuthorizationIT extends BaseIT implements
         ClockControlAbility,
         TokenGenerationAbility,
         LogCaptureAbility,
-        DatabaseSetupAbility {
-
+        DatabaseSetupAbility,
+        MetricAssertionAbility {
 
     def setup() {
         setupLogCapture('pl.pw.cyber.dbaccess.infrastructure.spring.security.JwtAuthFilter')
@@ -30,7 +31,7 @@ class AuthorizationIT extends BaseIT implements
         cleanupLogCapture()
     }
 
-    def "should reject request if user is not in allowlist (403)"() {
+    def "should reject request if user is not in allowlist (403) and increment security metric"() {
         expect:
             userWithNameDoesNotExists("not-existing-user")
 
@@ -43,13 +44,20 @@ class AuthorizationIT extends BaseIT implements
             def response = accessRequestBuilder()
                     .withHeader("Authorization", "Bearer ${token}")
                     .makeRequest()
+
         then:
             assertThat(response).hasStatusCode(403)
         and:
             warnLogCaptured("User: not-existing-user not found")
+        and:
+            metricWasExposed {
+                hasName("security_jwt_verification_failed_total")
+                hasTag("reason", "user_not_in_allowlist")
+                hasValueGreaterThan(0.0)
+            }
     }
 
-    def "should reject request if JWT subject is null"() {
+    def "should reject request if JWT subject is null and increment metric"() {
         given:
             def token = generateToken(aToken().withSubject(null))
 
@@ -57,13 +65,20 @@ class AuthorizationIT extends BaseIT implements
             def response = accessRequestBuilder()
                     .withHeader("Authorization", "Bearer ${token}")
                     .makeRequest()
+
         then:
             assertThat(response).hasStatusCode(401)
         and:
             warnLogCaptured("Username is null or blank")
+        and:
+            metricWasExposed {
+                hasName("security_jwt_verification_failed_total")
+                hasTag("reason", "subject_blank")
+                hasValueGreaterThan(0.0)
+            }
     }
 
-    def "should reject request if JWT subject is blank"() {
+    def "should reject request if JWT subject is blank and increment metric"() {
         given:
             def token = generateToken(aToken().withSubject(" "))
 
@@ -71,9 +86,16 @@ class AuthorizationIT extends BaseIT implements
             def response = accessRequestBuilder()
                     .withHeader("Authorization", "Bearer ${token}")
                     .makeRequest()
+
         then:
             assertThat(response).hasStatusCode(401)
         and:
             warnLogCaptured("Username is null or blank")
+        and:
+            metricWasExposed {
+                hasName("security_jwt_verification_failed_total")
+                hasTag("reason", "subject_blank")
+                hasValueGreaterThan(0.0)
+            }
     }
 }

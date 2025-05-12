@@ -1,5 +1,7 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security
 
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.springframework.core.io.ByteArrayResource
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.GenerateKeysAbility
 import spock.lang.Specification
@@ -10,6 +12,8 @@ import java.time.Clock
 
 class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
 
+    private MeterRegistry meterRegistry = new SimpleMeterRegistry()
+
     def "should create JwtTokenVerifier from valid DER encoded EC public key"() {
         given:
             def ecKey = generateECKeyPair()
@@ -19,7 +23,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
             def config = new JwtTokenConfig()
 
         when:
-            def verifier = config.jwtTokenVerifier(Clock.systemUTC(), props)
+            def verifier = config.jwtTokenVerifier(Clock.systemUTC(), props, meterRegistry)
 
         then:
             verifier != null
@@ -36,7 +40,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
             def config = new JwtTokenConfig()
 
         when:
-            config.jwtTokenVerifier(Clock.systemUTC(), props)
+            config.jwtTokenVerifier(Clock.systemUTC(), props, meterRegistry)
 
         then:
             def ex = thrown(InvalidKeySpecException)
@@ -50,7 +54,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
             def config = new JwtTokenConfig()
 
         when:
-            config.jwtTokenVerifier(Clock.systemUTC(), props)
+            config.jwtTokenVerifier(Clock.systemUTC(), props, meterRegistry)
 
         then:
             def ex = thrown(InvalidKeySpecException)
@@ -65,7 +69,7 @@ class JwtTokenConfigSpec extends Specification implements GenerateKeysAbility {
             def config = new JwtTokenConfig()
 
         when:
-            config.jwtTokenVerifier(Clock.systemUTC(), props)
+            config.jwtTokenVerifier(Clock.systemUTC(), props, meterRegistry)
 
         then:
             def ex = thrown(InvalidKeySpecException)

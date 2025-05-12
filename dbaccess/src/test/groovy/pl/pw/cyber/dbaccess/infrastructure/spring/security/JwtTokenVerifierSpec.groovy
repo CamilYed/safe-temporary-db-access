@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.GenerateKeysAbility
 import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
 import pl.pw.cyber.dbaccess.testing.dsl.fixtures.JwtTokenFixture
@@ -25,7 +26,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
     def setup() {
         def keyPair = generateECKeyPair()
         privateKey = keyPair.private as ECPrivateKey
-        verifier = new JwtTokenVerifier(CLOCK, keyPair.public as ECPublicKey)
+        verifier = new JwtTokenVerifier(CLOCK, keyPair.public as ECPublicKey, new SimpleMeterRegistry())
         tokenGenerator = new TestJwtTokenGenerator(privateKey)
     }
 

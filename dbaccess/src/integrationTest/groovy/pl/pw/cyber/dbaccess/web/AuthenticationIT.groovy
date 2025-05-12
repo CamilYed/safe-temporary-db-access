@@ -6,6 +6,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.AccessRequestAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.AddExampleUserAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.ClockControlAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.LogCaptureAbility
+import pl.pw.cyber.dbaccess.testing.dsl.abilities.MetricAssertionAbility
 import pl.pw.cyber.dbaccess.testing.dsl.abilities.TokenGenerationAbility
 
 import java.time.Duration
@@ -18,7 +19,8 @@ class AuthenticationIT extends BaseIT implements
         AddExampleUserAbility,
         ClockControlAbility,
         TokenGenerationAbility,
-        LogCaptureAbility {
+        LogCaptureAbility,
+        MetricAssertionAbility {
 
 
     def setup() {
@@ -56,6 +58,13 @@ class AuthenticationIT extends BaseIT implements
             assertThat(response).hasStatusCode(401)
         and:
             warnLogCaptured("JWT verification failed: Token expired")
+        and:
+            metricWasExposed {
+                hasName("security_jwt_verification_failed_total")
+                hasTag("reason", "expired")
+                hasValueGreaterThan(0.0)
+            }
+
     }
 
     def "should reject request if JWT TTL exceeds maximum allowed (401)"() {
@@ -66,7 +75,7 @@ class AuthenticationIT extends BaseIT implements
             def token = generateToken(aToken()
                     .withSubject("user-with-long-ttl")
                     .withIssueTime(currentTime())
-                    .withTtl(Duration.ofMinutes(10)) // Exceeds the 5-minute limit
+                    .withTtl(Duration.ofMinutes(10))
             )
 
         when:
@@ -78,6 +87,13 @@ class AuthenticationIT extends BaseIT implements
             assertThat(response).hasStatusCode(401)
         and:
             warnLogCaptured("JWT TTL exceeds the maximum allowed")
+        and:
+            metricWasExposed {
+                hasName("security_jwt_verification_failed_total")
+                hasTag("reason", "expired")
+                hasValueGreaterThan(0.0)
+            }
+
     }
 
     def "should reject request if JWT is invalid (401)"() {
@@ -92,5 +108,12 @@ class AuthenticationIT extends BaseIT implements
             assertThat(response).hasStatusCode(401)
         and:
             warnLogCaptured("JWT verification failed: Invalid JWS header: Invalid JSON object")
+        and:
+            metricWasExposed {
+                hasName("security_jwt_verification_failed_total")
+                hasTag("reason", "expired")
+                hasValueGreaterThan(0.0)
+            }
+
     }
 }

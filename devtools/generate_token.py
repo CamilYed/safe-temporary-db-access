@@ -1,9 +1,9 @@
+# generate_token.py
 import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 # === Auto-install required libraries ===
 try:
     import jwt
@@ -30,7 +30,7 @@ except ModuleNotFoundError:
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 # === Paths ===
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -48,13 +48,15 @@ SUBJECTS = ["alice", "bob", "charlie"]
 console = Console()
 
 LOGO = r"""
-  ________              __                         __                          ____  ____.________
- /  _____/  ____  _____/  |_  ___________    ____ |  | __ ___________  ____   |    |/ _/_   \   _  \ 
-/   \  ____/ __ \ \__  \   __\/ __ \_  __ \  / ___\|  |/ // __ \_  __ \/ __ \  |      <  |   ||  | \/ 
-\    \_\  \  ___/  / __ \|  | \  ___/|  | \/ / /_/  >    <\  ___/|  | \/ /_/ /  |    |  \ |   ||  |__  
- \______  /\___  >(____  /__|  \___  >__|    \___  /__|_ \\___  >__|  \____/   |____|__ \|___| \____/  
-        \/     \/      \/          \/        /_____/     \/    \/                   \/               
-"""
+   _____          __         _______                                                         _____   ____                                       
+  / ____|        / _|       |__   __|                                                       |  __ \ |  _ \       /\                             
+ | (___    __ _ | |_  ___      | |  ___  _ __ ___   _ __    ___   _ __  __ _  _ __  _   _   | |  | || |_) |     /  \    ___  ___  ___  ___  ___ 
+  \___ \  / _` ||  _|/ _ \     | | / _ \| '_ ` _ \ | '_ \  / _ \ | '__|/ _` || '__|| | | |  | |  | ||  _ <     / /\ \  / __|/ __|/ _ \/ __|/ __|
+  ____) || (_| || | |  __/     | ||  __/| | | | | || |_) || (_) || |  | (_| || |   | |_| |  | |__| || |_) |   / ____ \| (__| (__|  __/\__ \\__ \
+ |_____/  \__,_||_|  \___|     |_| \___||_| |_| |_|| .__/  \___/ |_|   \__,_||_|    \__, |  |_____/ |____/   /_/    \_\\___|\___|\___||___/|___/
+                                                   | |                               __/ |                                                      
+                                                   |_|                              |___/                                                                                                    
+ """
 
 def keys_exist():
     return os.path.exists(PRIVATE_KEY_PATH) and os.path.exists(PUBLIC_KEY_DER_PATH)
@@ -102,7 +104,7 @@ def generate_token(subject):
         console.print("[red]\u274C Keys missing. Generate them first![/red]")
         return
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     exp = now + timedelta(minutes=5)
     claims = {
         "sub": subject,
@@ -113,6 +115,46 @@ def generate_token(subject):
     }
 
     token = jwt.encode(claims, load_private_key(), algorithm="ES256")
+    show_token_info(token, claims)
+
+def generate_broken_token():
+    choices = {
+        "a": ("expired", lambda: jwt.encode({
+            "sub": "alice", "iat": datetime.now(timezone.utc) - timedelta(hours=1),
+            "exp": datetime.now(timezone.utc) - timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "b": ("long_ttl", lambda: jwt.encode({
+            "sub": "bob", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "c": ("invalid_subject", lambda: jwt.encode({
+            "sub": "not-allowed", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "d": ("bad_signature (signed with RS256 instead of ES256)", lambda: jwt.encode({
+            "sub": "alice", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, rsa.generate_private_key(public_exponent=65537, key_size=2048).private_bytes(
+            serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
+        ), algorithm="RS256")),
+
+        "e": ("parse_error", lambda: "invalid.token.payload")
+    }
+
+    console.print("\n[bold cyan]Choose broken token type:[/bold cyan]")
+    for k, (label, _) in choices.items():
+        console.print(f"[bold magenta]{k}[/bold magenta]: {label}")
+
+    selected = Prompt.ask("Enter type", choices=list(choices.keys()), default="a")
+    label, token_fn = choices[selected]
+    token = token_fn()
+
+    show_token_info(token, label)
+
+def show_token_info(token, claims_or_reason):
     panel = Panel.fit(token, title="JWT Token", subtitle="Paste in Swagger > Authorize", style="cyan")
     console.print(panel)
     try:
@@ -121,12 +163,16 @@ def generate_token(subject):
     except Exception:
         console.print("[yellow]\u26A0\uFE0F Could not copy to clipboard[/yellow]")
 
-    table = Table(title="\U0001F4DC Token Claims", box=None)
-    table.add_column("Claim", style="magenta")
-    table.add_column("Value", style="white")
-    for k in claims:
-        table.add_row(k, str(claims[k]))
-    console.print(table)
+    if isinstance(claims_or_reason, dict):
+        table = Table(title="\U0001F4DC Token Claims", box=None)
+        table.add_column("Claim", style="magenta")
+        table.add_column("Value", style="white")
+        for k in claims_or_reason:
+            table.add_row(k, str(claims_or_reason[k]))
+        console.print(table)
+    else:
+        console.print(f"[bold yellow]Token purpose:[/bold yellow] {claims_or_reason}")
+
     input("Press [Enter] to return to menu...")
 
 def clean_existing_container(name):
@@ -135,26 +181,132 @@ def clean_existing_container(name):
         console.print(f"[yellow]⚠️ Removing existing container '{name}'[/yellow]")
         subprocess.run(["docker", "rm", "-f", name])
 
+# def run_compose(file_path, project_name, message):
+#     if not os.path.exists(file_path):
+#         console.print(f"[red]❌ Missing Docker Compose file: {file_path}[/red]")
+#         input("Press [Enter] to return to menu...")
+#         return
+#
+#     container_names = [
+#         "safe-access-mongo",
+#         "safe-access-postgres1",
+#         "safe-access-postgres2",
+#         "safe-access-prometheus",
+#         "safe-access-grafana",
+#         "safe-access-app",
+#     ]
+#     for name in container_names:
+#         clean_existing_container(name)
+#
+#     # Start in detached mode and suppress logs
+#     subprocess.run([
+#         "docker-compose", "-f", file_path, "-p", project_name,
+#         "up", "-d", "--build"
+#     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+#
+#     # Show individual loading bars per container
+#     errors = []
+#     with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+#         tasks = {name: progress.add_task(f"Starting {name}...", start=False) for name in container_names}
+#
+#         for name in container_names:
+#             progress.start_task(tasks[name])
+#             for _ in range(10):  # Retry for ~5 seconds total
+#                 status = subprocess.run(
+#                     ["docker", "inspect", "-f", "{{.State.Running}}", name],
+#                     capture_output=True, text=True
+#                 )
+#                 if status.returncode == 0 and status.stdout.strip() == "true":
+#                     break
+#                 time.sleep(0.5)
+#             else:
+#                 errors.append(name)
+#             progress.update(tasks[name], description=f"{name} ✅" if name not in errors else f"{name} ❌")
+#             time.sleep(0.3)
+#
+#     if errors:
+#         console.print(f"[red]❌ Failed to start: {', '.join(errors)}[/red]")
+#     else:
+#         console.print(Panel.fit(
+#             f"✅ [bold green]{project_name} started successfully![/bold green]\n\n{message}",
+#             title="🟢 All Services Ready", style="bold green"
+#         ))
+#     input("Press [Enter] to return to menu...")
+
 def run_compose(file_path, project_name, message):
     if not os.path.exists(file_path):
-        console.print(f"[red]\u274C Missing Docker Compose file: {file_path}[/red]")
-        input("Press [Enter] to return to menu...")
-        return
-    if not keys_exist():
-        console.print("[red]\u274C Keys are required before starting the project.[/red]")
+        console.print(f"[red]❌ Missing Docker Compose file: {file_path}[/red]")
         input("Press [Enter] to return to menu...")
         return
 
-    clean_existing_container("safe-access-mongo")
-    clean_existing_container("safe-access-postgres")
+    is_local_dev = project_name == "safe-access-dev"
 
-    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as progress:
-        progress.add_task(description="Launching Docker Compose...", total=None)
-        subprocess.Popen(["docker-compose", "-f", file_path, "-p", project_name, "up", "--build"])
-        time.sleep(3)
+    # full list but app is handled separately
+    container_names = [
+        "safe-access-mongo",
+        "safe-access-postgres1",
+        "safe-access-postgres2",
+        "safe-access-prometheus",
+        "safe-access-grafana"
+    ]
+    if not is_local_dev:
+        container_names.append("safe-access-app")
 
-    console.print(Panel.fit(f"[green]\u2705 {project_name} started![/green]\n\n{message}", title="\U0001F7E2 Running", style="bold green"))
+    for name in container_names:
+        clean_existing_container(name)
+
+    subprocess.run(["docker-compose", "-f", file_path, "-p", project_name, "up", "-d", "--build"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(2)
+
+    errors = []
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        tasks = {name: progress.add_task(f"Starting {name}...", start=False) for name in container_names}
+        for name in container_names:
+            progress.start_task(tasks[name])
+            for _ in range(10):
+                result = subprocess.run(["docker", "inspect", "-f", "{{.State.Running}}", name],
+                                        capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip() == "true":
+                    break
+                time.sleep(0.5)
+            else:
+                errors.append(name)
+            progress.update(tasks[name], description=f"{name} ✅" if name not in errors else f"{name} ❌")
+            time.sleep(0.3)
+
+    if is_local_dev:
+        # local development: do not start app container
+        console.print(Panel.fit(
+            """[bold green]✅ Local environment is ready![/bold green]
+
+[bold yellow]Next step:[/bold yellow] Launch the app manually in IntelliJ IDEA.
+
+Required Spring profile: [bold cyan]dev[/bold cyan]
+
+Set the following environment variables:
+[bold]TEST1_DB_URL[/bold]       = jdbc:postgresql://localhost:5432/test1
+[bold]TEST1_DB_USERNAME[/bold]   = admin
+[bold]TEST1_DB_PASSWORD[/bold]   = admin
+[bold]TEST2_DB_URL[/bold]       = jdbc:postgresql://localhost:5433/test2
+[bold]TEST2_DB_USERNAME[/bold]   = admin
+[bold]TEST2_DB_PASSWORD[/bold]   = admin
+[bold]PROMETHEUS_USER[/bold]     = prometheus
+[bold]PROMETHEUS_PASSWORD_HASH[/bold] = tXeBJWJtdUk7QOqeOfUre.IRbNJJxByeXcekAk0vEuNxrdnQaEMzS
+
+📍 You can find these under: Run Configurations → Environment Variables
+""",
+            title="🛠️ Ready for Local Development", style="bold yellow"
+        ))
+    elif errors:
+        console.print(f"[red]❌ Failed to start: {', '.join(errors)}[/red]")
+    else:
+        console.print(Panel.fit(
+            f"[green]✅ {project_name} started successfully![/green]\n\n{message}",
+            title="🟢 All Services Ready", style="bold green"
+        ))
+
     input("Press [Enter] to return to menu...")
+
 
 def stop_compose(compose_file, project_name):
     full_path = os.path.abspath(os.path.join(DOCKER_DIR, compose_file))
@@ -175,13 +327,14 @@ def menu():
         console.print("[bold green]2.[/bold green] Generate EC256 Keys (if missing)")
         console.print("[bold green]3.[/bold green] Show Key Paths")
         console.print("[bold green]4.[/bold green] Generate JWT Token")
-        console.print("[bold cyan]5.[/bold cyan] Run Docker Compose (Dev Build)")
-        console.print("[bold cyan]6.[/bold cyan] Run Docker Compose (Prebuilt Image)")
-        console.print("[bold red]7.[/bold red] Stop Docker Compose (Dev)")
-        console.print("[bold red]8.[/bold red] Stop Docker Compose (Prebuilt)")
-        console.print("[bold magenta]9.[/bold magenta] Exit")
+        console.print("[bold red]5.[/bold red] Generate Broken JWT Token")
+        console.print("[bold cyan]6.[/bold cyan] Run Docker Compose (Dev Build)")
+        console.print("[bold cyan]7.[/bold cyan] Run Docker Compose (Prebuilt Image)")
+        console.print("[bold red]8.[/bold red] Stop Docker Compose (Dev)")
+        console.print("[bold red]9.[/bold red] Stop Docker Compose (Prebuilt)")
+        console.print("[bold magenta]10.[/bold magenta] Exit")
 
-        choice = Prompt.ask("\n[?] Choose an option", choices=[str(i) for i in range(1, 10)], default="9")
+        choice = Prompt.ask("\n[?] Choose an option", choices=[str(i) for i in range(1, 11)], default="10")
 
         if choice == "1":
             subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", os.path.join(BASE_DIR, "devtools", "requirements.txt")])
@@ -193,14 +346,16 @@ def menu():
             subject = Prompt.ask("Enter subject", choices=SUBJECTS)
             generate_token(subject)
         elif choice == "5":
-            run_compose(COMPOSE_DEV, "safe-access-dev", "Run IntelliJ IDEA with profile: [bold cyan]dev[/bold cyan]")
+            generate_broken_token()
         elif choice == "6":
-            run_compose(COMPOSE_IMG, "safe-access-img", "Open in browser: [bold]http://127.0.0.1:8080/swagger-ui/index.html[/bold]")
+            run_compose(COMPOSE_DEV, "safe-access-dev", "Run IntelliJ IDEA with profile: [bold cyan]dev[/bold cyan]")
         elif choice == "7":
-            stop_compose("docker-compose.yaml", "safe-access-dev")
+            run_compose(COMPOSE_IMG, "safe-access-img", "Open in browser: [bold]http://127.0.0.1:8080/swagger-ui/index.html[/bold]")
         elif choice == "8":
-            stop_compose("docker-compose.image.yaml", "safe-access-img")
+            stop_compose("docker-compose.yaml", "safe-access-dev")
         elif choice == "9":
+            stop_compose("docker-compose.image.yaml", "safe-access-img")
+        elif choice == "10":
             console.print("\n\U0001F44B [bold green]Goodbye and good hacking![/bold green]")
             break
 
