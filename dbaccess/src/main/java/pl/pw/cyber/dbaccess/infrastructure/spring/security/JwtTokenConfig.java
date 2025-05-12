@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -14,15 +15,19 @@ import java.time.Clock;
 class JwtTokenConfig {
 
     @Bean
-    JwtTokenVerifier jwtTokenVerifier(Clock clock, JwtKeyProperties props) throws Exception {
-        return new JwtTokenVerifier(clock, loadPublicKey(props.publicKey()));
+    JwtTokenVerifier jwtTokenVerifier(
+      Clock clock,
+      JwtKeyProperties props,
+      MeterRegistry meterRegistry
+    ) throws Exception {
+        return new JwtTokenVerifier(clock, loadPublicKey(props.publicKey()), meterRegistry);
     }
 
     @Bean
     public JwtAuthFilter jwtAuthenticationFilter(
-      JwtTokenVerifier jwtTokenVerifier, UserRepository userRepository
+      JwtTokenVerifier jwtTokenVerifier, UserRepository userRepository, MeterRegistry meterRegistry
     ) {
-        return new JwtAuthFilter(jwtTokenVerifier, userRepository);
+        return new JwtAuthFilter(jwtTokenVerifier, userRepository, meterRegistry);
     }
 
     /**

@@ -71,6 +71,7 @@
   "links": [],
   "refresh": "30s",
   "rows": [
+
     {
       "title": "Business Metrics Overview",
       "type": "row",
@@ -183,6 +184,108 @@
             { "id": "labelsToFields", "options": { "mode": "columns" } },
             { "id": "reduce", "options": { "reducers": ["lastNotNull"] } }
           ]
+        }
+      ]
+    },
+
+
+    {
+      "title": "Security Metrics",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 100 },
+      "panels": [
+        {
+          "type": "stat",
+          "title": "🔐 Total JWT Verification Failures",
+          "id": 4001,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 101 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\"})"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 10 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "barchart",
+          "title": "📊 JWT Failure Count by Reason",
+          "id": 4002,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 8, "w": 12, "x": 6, "y": 101 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(reason) (security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\"})"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "short", "decimals": 0 }
+          },
+          "options": {
+            "orientation": "horizontal",
+            "xField": "reason",
+            "showLegend": true,
+            "legend": { "position": "bottom" }
+          }
+        },
+        {
+          "type": "stat",
+          "title": "🙅‍♂️ User Not in Allowlist",
+          "id": 4004,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 101 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(security_jwt_verification_failed_total{reason=\"user_not_in_allowlist\", application=\"$application\", instance=\"$instance\"})"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 1 },
+                  { "color": "red", "value": 5 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "⏱ JWT Failures Rate (1m)",
+          "id": 4003,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 110 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\"}[1m])"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "ops", "decimals": 2 }
+          }
         }
       ]
     },

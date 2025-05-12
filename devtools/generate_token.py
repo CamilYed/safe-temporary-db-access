@@ -1,9 +1,9 @@
+# generate_token.py
 import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta
-
+from datetime import datetime, timedelta, timezone
 # === Auto-install required libraries ===
 try:
     import jwt
@@ -30,7 +30,7 @@ except ModuleNotFoundError:
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 # === Paths ===
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -48,13 +48,15 @@ SUBJECTS = ["alice", "bob", "charlie"]
 console = Console()
 
 LOGO = r"""
-  ________              __                         __                          ____  ____.________
- /  _____/  ____  _____/  |_  ___________    ____ |  | __ ___________  ____   |    |/ _/_   \   _  \ 
-/   \  ____/ __ \ \__  \   __\/ __ \_  __ \  / ___\|  |/ // __ \_  __ \/ __ \  |      <  |   ||  | \/ 
-\    \_\  \  ___/  / __ \|  | \  ___/|  | \/ / /_/  >    <\  ___/|  | \/ /_/ /  |    |  \ |   ||  |__  
- \______  /\___  >(____  /__|  \___  >__|    \___  /__|_ \\___  >__|  \____/   |____|__ \|___| \____/  
-        \/     \/      \/          \/        /_____/     \/    \/                   \/               
-"""
+   _____          __         _______                                                         _____   ____                                       
+  / ____|        / _|       |__   __|                                                       |  __ \ |  _ \       /\                             
+ | (___    __ _ | |_  ___      | |  ___  _ __ ___   _ __    ___   _ __  __ _  _ __  _   _   | |  | || |_) |     /  \    ___  ___  ___  ___  ___ 
+  \___ \  / _` ||  _|/ _ \     | | / _ \| '_ ` _ \ | '_ \  / _ \ | '__|/ _` || '__|| | | |  | |  | ||  _ <     / /\ \  / __|/ __|/ _ \/ __|/ __|
+  ____) || (_| || | |  __/     | ||  __/| | | | | || |_) || (_) || |  | (_| || |   | |_| |  | |__| || |_) |   / ____ \| (__| (__|  __/\__ \\__ \
+ |_____/  \__,_||_|  \___|     |_| \___||_| |_| |_|| .__/  \___/ |_|   \__,_||_|    \__, |  |_____/ |____/   /_/    \_\\___|\___|\___||___/|___/
+                                                   | |                               __/ |                                                      
+                                                   |_|                              |___/                                                                                                    
+ """
 
 def keys_exist():
     return os.path.exists(PRIVATE_KEY_PATH) and os.path.exists(PUBLIC_KEY_DER_PATH)
@@ -102,7 +104,7 @@ def generate_token(subject):
         console.print("[red]\u274C Keys missing. Generate them first![/red]")
         return
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     exp = now + timedelta(minutes=5)
     claims = {
         "sub": subject,
@@ -113,6 +115,46 @@ def generate_token(subject):
     }
 
     token = jwt.encode(claims, load_private_key(), algorithm="ES256")
+    show_token_info(token, claims)
+
+def generate_broken_token():
+    choices = {
+        "a": ("expired", lambda: jwt.encode({
+            "sub": "alice", "iat": datetime.now(timezone.utc) - timedelta(hours=1),
+            "exp": datetime.now(timezone.utc) - timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "b": ("long_ttl", lambda: jwt.encode({
+            "sub": "bob", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "c": ("invalid_subject", lambda: jwt.encode({
+            "sub": "not-allowed", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "d": ("bad_signature (signed with RS256 instead of ES256)", lambda: jwt.encode({
+            "sub": "alice", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, rsa.generate_private_key(public_exponent=65537, key_size=2048).private_bytes(
+            serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
+        ), algorithm="RS256")),
+
+        "e": ("parse_error", lambda: "invalid.token.payload")
+    }
+
+    console.print("\n[bold cyan]Choose broken token type:[/bold cyan]")
+    for k, (label, _) in choices.items():
+        console.print(f"[bold magenta]{k}[/bold magenta]: {label}")
+
+    selected = Prompt.ask("Enter type", choices=list(choices.keys()), default="a")
+    label, token_fn = choices[selected]
+    token = token_fn()
+
+    show_token_info(token, label)
+
+def show_token_info(token, claims_or_reason):
     panel = Panel.fit(token, title="JWT Token", subtitle="Paste in Swagger > Authorize", style="cyan")
     console.print(panel)
     try:
@@ -121,12 +163,16 @@ def generate_token(subject):
     except Exception:
         console.print("[yellow]\u26A0\uFE0F Could not copy to clipboard[/yellow]")
 
-    table = Table(title="\U0001F4DC Token Claims", box=None)
-    table.add_column("Claim", style="magenta")
-    table.add_column("Value", style="white")
-    for k in claims:
-        table.add_row(k, str(claims[k]))
-    console.print(table)
+    if isinstance(claims_or_reason, dict):
+        table = Table(title="\U0001F4DC Token Claims", box=None)
+        table.add_column("Claim", style="magenta")
+        table.add_column("Value", style="white")
+        for k in claims_or_reason:
+            table.add_row(k, str(claims_or_reason[k]))
+        console.print(table)
+    else:
+        console.print(f"[bold yellow]Token purpose:[/bold yellow] {claims_or_reason}")
+
     input("Press [Enter] to return to menu...")
 
 def clean_existing_container(name):
@@ -175,13 +221,14 @@ def menu():
         console.print("[bold green]2.[/bold green] Generate EC256 Keys (if missing)")
         console.print("[bold green]3.[/bold green] Show Key Paths")
         console.print("[bold green]4.[/bold green] Generate JWT Token")
-        console.print("[bold cyan]5.[/bold cyan] Run Docker Compose (Dev Build)")
-        console.print("[bold cyan]6.[/bold cyan] Run Docker Compose (Prebuilt Image)")
-        console.print("[bold red]7.[/bold red] Stop Docker Compose (Dev)")
-        console.print("[bold red]8.[/bold red] Stop Docker Compose (Prebuilt)")
-        console.print("[bold magenta]9.[/bold magenta] Exit")
+        console.print("[bold red]5.[/bold red] Generate Broken JWT Token")
+        console.print("[bold cyan]6.[/bold cyan] Run Docker Compose (Dev Build)")
+        console.print("[bold cyan]7.[/bold cyan] Run Docker Compose (Prebuilt Image)")
+        console.print("[bold red]8.[/bold red] Stop Docker Compose (Dev)")
+        console.print("[bold red]9.[/bold red] Stop Docker Compose (Prebuilt)")
+        console.print("[bold magenta]10.[/bold magenta] Exit")
 
-        choice = Prompt.ask("\n[?] Choose an option", choices=[str(i) for i in range(1, 10)], default="9")
+        choice = Prompt.ask("\n[?] Choose an option", choices=[str(i) for i in range(1, 11)], default="10")
 
         if choice == "1":
             subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", os.path.join(BASE_DIR, "devtools", "requirements.txt")])
@@ -193,14 +240,16 @@ def menu():
             subject = Prompt.ask("Enter subject", choices=SUBJECTS)
             generate_token(subject)
         elif choice == "5":
-            run_compose(COMPOSE_DEV, "safe-access-dev", "Run IntelliJ IDEA with profile: [bold cyan]dev[/bold cyan]")
+            generate_broken_token()
         elif choice == "6":
-            run_compose(COMPOSE_IMG, "safe-access-img", "Open in browser: [bold]http://127.0.0.1:8080/swagger-ui/index.html[/bold]")
+            run_compose(COMPOSE_DEV, "safe-access-dev", "Run IntelliJ IDEA with profile: [bold cyan]dev[/bold cyan]")
         elif choice == "7":
-            stop_compose("docker-compose.yaml", "safe-access-dev")
+            run_compose(COMPOSE_IMG, "safe-access-img", "Open in browser: [bold]http://127.0.0.1:8080/swagger-ui/index.html[/bold]")
         elif choice == "8":
-            stop_compose("docker-compose.image.yaml", "safe-access-img")
+            stop_compose("docker-compose.yaml", "safe-access-dev")
         elif choice == "9":
+            stop_compose("docker-compose.image.yaml", "safe-access-img")
+        elif choice == "10":
             console.print("\n\U0001F44B [bold green]Goodbye and good hacking![/bold green]")
             break
 

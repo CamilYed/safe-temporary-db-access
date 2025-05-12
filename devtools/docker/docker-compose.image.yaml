@@ -40,7 +40,8 @@ services:
     image: ghcr.io/camilyed/safe-temporary-db-access:latest
     container_name: safe-access-app
     depends_on:
-      - postgres
+      - postgres1
+      - postgres2
       - mongo
     ports:
       - "8080:8080"

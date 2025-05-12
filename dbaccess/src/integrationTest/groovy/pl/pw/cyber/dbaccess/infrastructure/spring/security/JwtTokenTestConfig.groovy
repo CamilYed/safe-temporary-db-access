@@ -1,5 +1,6 @@
 package pl.pw.cyber.dbaccess.infrastructure.spring.security
 
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
@@ -26,8 +27,8 @@ class JwtTokenTestConfig implements GenerateKeysAbility {
 
     @Bean
     @Primary
-    JwtTokenVerifier jwtTokenVerifier(Clock clock, KeyPair ecKeyPair) throws Exception {
-        return new JwtTokenVerifier(clock, ecKeyPair.getPublic() as ECPublicKey)
+    JwtTokenVerifier jwtTokenVerifier(Clock clock, KeyPair ecKeyPair, MeterRegistry meterRegistry) throws Exception {
+        return new JwtTokenVerifier(clock, ecKeyPair.getPublic() as ECPublicKey, meterRegistry)
     }
 
     @Bean
