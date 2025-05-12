@@ -181,26 +181,132 @@ def clean_existing_container(name):
         console.print(f"[yellow]⚠️ Removing existing container '{name}'[/yellow]")
         subprocess.run(["docker", "rm", "-f", name])
 
+# def run_compose(file_path, project_name, message):
+#     if not os.path.exists(file_path):
+#         console.print(f"[red]❌ Missing Docker Compose file: {file_path}[/red]")
+#         input("Press [Enter] to return to menu...")
+#         return
+#
+#     container_names = [
+#         "safe-access-mongo",
+#         "safe-access-postgres1",
+#         "safe-access-postgres2",
+#         "safe-access-prometheus",
+#         "safe-access-grafana",
+#         "safe-access-app",
+#     ]
+#     for name in container_names:
+#         clean_existing_container(name)
+#
+#     # Start in detached mode and suppress logs
+#     subprocess.run([
+#         "docker-compose", "-f", file_path, "-p", project_name,
+#         "up", "-d", "--build"
+#     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+#
+#     # Show individual loading bars per container
+#     errors = []
+#     with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+#         tasks = {name: progress.add_task(f"Starting {name}...", start=False) for name in container_names}
+#
+#         for name in container_names:
+#             progress.start_task(tasks[name])
+#             for _ in range(10):  # Retry for ~5 seconds total
+#                 status = subprocess.run(
+#                     ["docker", "inspect", "-f", "{{.State.Running}}", name],
+#                     capture_output=True, text=True
+#                 )
+#                 if status.returncode == 0 and status.stdout.strip() == "true":
+#                     break
+#                 time.sleep(0.5)
+#             else:
+#                 errors.append(name)
+#             progress.update(tasks[name], description=f"{name} ✅" if name not in errors else f"{name} ❌")
+#             time.sleep(0.3)
+#
+#     if errors:
+#         console.print(f"[red]❌ Failed to start: {', '.join(errors)}[/red]")
+#     else:
+#         console.print(Panel.fit(
+#             f"✅ [bold green]{project_name} started successfully![/bold green]\n\n{message}",
+#             title="🟢 All Services Ready", style="bold green"
+#         ))
+#     input("Press [Enter] to return to menu...")
+
 def run_compose(file_path, project_name, message):
     if not os.path.exists(file_path):
-        console.print(f"[red]\u274C Missing Docker Compose file: {file_path}[/red]")
-        input("Press [Enter] to return to menu...")
-        return
-    if not keys_exist():
-        console.print("[red]\u274C Keys are required before starting the project.[/red]")
+        console.print(f"[red]❌ Missing Docker Compose file: {file_path}[/red]")
         input("Press [Enter] to return to menu...")
         return
 
-    clean_existing_container("safe-access-mongo")
-    clean_existing_container("safe-access-postgres")
+    is_local_dev = project_name == "safe-access-dev"
 
-    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as progress:
-        progress.add_task(description="Launching Docker Compose...", total=None)
-        subprocess.Popen(["docker-compose", "-f", file_path, "-p", project_name, "up", "--build"])
-        time.sleep(3)
+    # full list but app is handled separately
+    container_names = [
+        "safe-access-mongo",
+        "safe-access-postgres1",
+        "safe-access-postgres2",
+        "safe-access-prometheus",
+        "safe-access-grafana"
+    ]
+    if not is_local_dev:
+        container_names.append("safe-access-app")
 
-    console.print(Panel.fit(f"[green]\u2705 {project_name} started![/green]\n\n{message}", title="\U0001F7E2 Running", style="bold green"))
+    for name in container_names:
+        clean_existing_container(name)
+
+    subprocess.run(["docker-compose", "-f", file_path, "-p", project_name, "up", "-d", "--build"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    time.sleep(2)
+
+    errors = []
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
+        tasks = {name: progress.add_task(f"Starting {name}...", start=False) for name in container_names}
+        for name in container_names:
+            progress.start_task(tasks[name])
+            for _ in range(10):
+                result = subprocess.run(["docker", "inspect", "-f", "{{.State.Running}}", name],
+                                        capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip() == "true":
+                    break
+                time.sleep(0.5)
+            else:
+                errors.append(name)
+            progress.update(tasks[name], description=f"{name} ✅" if name not in errors else f"{name} ❌")
+            time.sleep(0.3)
+
+    if is_local_dev:
+        # local development: do not start app container
+        console.print(Panel.fit(
+            """[bold green]✅ Local environment is ready![/bold green]
+
+[bold yellow]Next step:[/bold yellow] Launch the app manually in IntelliJ IDEA.
+
+Required Spring profile: [bold cyan]dev[/bold cyan]
+
+Set the following environment variables:
+[bold]TEST1_DB_URL[/bold]       = jdbc:postgresql://localhost:5432/test1
+[bold]TEST1_DB_USERNAME[/bold]   = admin
+[bold]TEST1_DB_PASSWORD[/bold]   = admin
+[bold]TEST2_DB_URL[/bold]       = jdbc:postgresql://localhost:5433/test2
+[bold]TEST2_DB_USERNAME[/bold]   = admin
+[bold]TEST2_DB_PASSWORD[/bold]   = admin
+[bold]PROMETHEUS_USER[/bold]     = prometheus
+[bold]PROMETHEUS_PASSWORD_HASH[/bold] = tXeBJWJtdUk7QOqeOfUre.IRbNJJxByeXcekAk0vEuNxrdnQaEMzS
+
+📍 You can find these under: Run Configurations → Environment Variables
+""",
+            title="🛠️ Ready for Local Development", style="bold yellow"
+        ))
+    elif errors:
+        console.print(f"[red]❌ Failed to start: {', '.join(errors)}[/red]")
+    else:
+        console.print(Panel.fit(
+            f"[green]✅ {project_name} started successfully![/green]\n\n{message}",
+            title="🟢 All Services Ready", style="bold green"
+        ))
+
     input("Press [Enter] to return to menu...")
+
 
 def stop_compose(compose_file, project_name):
     full_path = os.path.abspath(os.path.join(DOCKER_DIR, compose_file))
