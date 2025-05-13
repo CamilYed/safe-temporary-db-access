@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -57,7 +58,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
                 if (username == null || username.isBlank()) {
                     log.warn("Username is null or blank");
-                    recordSecurityFailure("subject_blank");
+                    recordSecurityFailureWithoutSubject("subject_blank");
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid token");
                     return;
                 }
@@ -66,7 +67,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
                 if (userOpt.isEmpty()) {
                     log.warn("User: {} not found", username);
                     request.setAttribute(AUTHORIZATION_FAILURE_ATTRIBUTE, true);
-                    recordSecurityFailure("user_not_in_allowlist");
+                    recordSecurityFailureWithSubject("user_not_in_allowlist", username);
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
                     return;
                 }
@@ -101,7 +102,16 @@ class JwtAuthFilter extends OncePerRequestFilter {
         return authHeader != null && authHeader.startsWith("Bearer ");
     }
 
-    private void recordSecurityFailure(String reason) {
-        meterRegistry.counter("security_jwt_verification_failed_total", "reason", reason).increment();
+    private void recordSecurityFailureWithSubject(String reason, String subject) {
+        String sanitizedSubject = StringUtils.isNotBlank(subject) ? subject : "unknown";
+        meterRegistry.counter("security_jwt_verification_failed_total",
+          "reason", reason,
+          "subject", sanitizedSubject).increment();
+    }
+
+    private void recordSecurityFailureWithoutSubject(String reason) {
+        meterRegistry.counter("security_jwt_verification_failed_total",
+          "reason", reason,
+          "subject", "none").increment();
     }
 }

@@ -53,6 +53,7 @@ class AuthorizationIT extends BaseIT implements
             metricWasExposed {
                 hasName("security_jwt_verification_failed_total")
                 hasTag("reason", "user_not_in_allowlist")
+                hasTag("subject", "not-existing-user")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -74,6 +75,7 @@ class AuthorizationIT extends BaseIT implements
             metricWasExposed {
                 hasName("security_jwt_verification_failed_total")
                 hasTag("reason", "subject_blank")
+                hasTag("subject", "null or blank")
                 hasValueGreaterThan(0.0)
             }
     }
