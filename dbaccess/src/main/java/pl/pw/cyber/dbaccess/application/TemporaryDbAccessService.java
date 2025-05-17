@@ -92,7 +92,8 @@ public class TemporaryDbAccessService {
           "access_success_total",
           "database", command.targetDatabase(),
           "permission", command.permissionLevel().name(),
-          "ttl", String.valueOf(command.duration().toMinutes())
+          "ttl", String.valueOf(command.duration().toMinutes()),
+          "requestedBy", command.requestedBy()
         ).increment();
     }
 
@@ -101,7 +102,8 @@ public class TemporaryDbAccessService {
           "access_failed_total",
           "database", command.targetDatabase(),
           "permission", command.permissionLevel().name(),
-          "ttl", String.valueOf(command.duration().toMinutes())
+          "ttl", String.valueOf(command.duration().toMinutes()),
+          "requestedBy", command.requestedBy()
         ).increment();
     }
 

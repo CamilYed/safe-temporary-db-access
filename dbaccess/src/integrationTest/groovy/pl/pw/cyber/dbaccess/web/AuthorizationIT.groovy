@@ -51,9 +51,7 @@ class AuthorizationIT extends BaseIT implements
             warnLogCaptured("User: not-existing-user not found")
         and:
             metricWasExposed {
-                hasName("security_jwt_verification_failed_total")
-                hasTag("reason", "user_not_in_allowlist")
-                hasTag("subject", "not-existing-user")
+                hasName("jwt_user_not_in_allowlist_total")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -73,9 +71,7 @@ class AuthorizationIT extends BaseIT implements
             warnLogCaptured("Username is null or blank")
         and:
             metricWasExposed {
-                hasName("security_jwt_verification_failed_total")
-                hasTag("reason", "subject_blank")
-                hasTag("subject", "null or blank")
+                hasName("jwt_missing_subject_total")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -95,8 +91,7 @@ class AuthorizationIT extends BaseIT implements
             warnLogCaptured("Username is null or blank")
         and:
             metricWasExposed {
-                hasName("security_jwt_verification_failed_total")
-                hasTag("reason", "subject_blank")
+                hasName("jwt_missing_subject_total")
                 hasValueGreaterThan(0.0)
             }
     }

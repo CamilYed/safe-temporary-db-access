@@ -72,340 +72,415 @@
   "refresh": "30s",
   "rows": [
     {
-      "title": "Business Metrics Overview",
+      "title": "Access Grants (Live)",
       "type": "row",
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
       "panels": [
         {
-          "type": "barchart",
-          "title": "✅ Access Success by DB, Permission & TTL",
-          "id": 3001,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 0
-          },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "sum by(database, permission, ttl) (access_success_total{application=\"$application\", instance=\"$instance\"})"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "decimals": 0
-            }
-          },
-          "options": {
-            "orientation": "vertical",
-            "xField": "database",
-            "groupByField": "permission",
-            "showLegend": true,
-            "legend": {
-              "displayMode": "table",
-              "placement": "bottom"
-            }
-          }
-        },
-        {
           "type": "stat",
-          "title": "❌ Total Access Failures",
-          "id": 3002,
+          "title": "Accesses Granted (Cumulative)",
+          "id": 1001,
           "datasource": "Prometheus",
-          "gridPos": {
-            "h": 4,
-            "w": 6,
-            "x": 12,
-            "y": 0
-          },
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
           "targets": [
             {
-              "refId": "A",
-              "expr": "sum(access_failed_total{application=\"$application\", instance=\"$instance\"})"
+              "expr": "sum(access_success_total)",
+              "refId": "A"
             }
           ],
           "fieldConfig": {
             "defaults": {
-              "unit": "short",
-              "color": {
-                "mode": "thresholds"
-              },
+              "unit": "none",
+              "decimals": 0,
+              "color": { "mode": "thresholds" },
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "orange",
-                    "value": 1
-                  },
-                  {
-                    "color": "red",
-                    "value": 5
-                  }
+                  { "color": "green", "value": null }
                 ]
               }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "orientation": "auto",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto"
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Accesses Over Time (By RequestedBy)",
+          "id": 1002,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 4 },
+          "targets": [
+            {
+              "expr": "sum by(requestedBy) (rate(access_success_total[5m]))",
+              "refId": "A",
+              "legendFormat": "{{requestedBy}}"
             }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
           }
         },
         {
           "type": "table",
-          "title": "📊 Access Failures by DB, Permission & TTL",
-          "id": 3003,
+          "title": "Accesses by DB, Permission, TTL, User",
+          "id": 1003,
           "datasource": "Prometheus",
-          "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 0,
-            "y": 8
-          },
+          "gridPos": { "h": 5, "w": 24, "x": 0, "y": 10 },
           "targets": [
             {
+              "expr": "sum by(database, permission, ttl, requestedBy) (access_success_total)",
               "refId": "A",
-              "expr": "sum by(database, permission, ttl) (access_failed_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
           ],
           "transformations": [
             {
-              "id": "labelsToFields",
+              "id": "organize",
               "options": {
-                "mode": "columns"
+                "excludeByName": { "__name__": true },
+                "indexByName": {
+                  "database": 0,
+                  "permission": 1,
+                  "ttl": 2,
+                  "requestedBy": 3,
+                  "Value": 4
+                },
+                "renameByName": {
+                  "database": "DB",
+                  "permission": "Permission",
+                  "ttl": "TTL (min)",
+                  "requestedBy": "User",
+                  "Value": "Total Grants"
+                }
+              }
+            }
+          ],
+          "options": { "showHeader": true },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Access Revokes (Live)",
+      "type": "row",
+      "collapsed": false,
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Revokes (Cumulative)",
+          "id": 1101,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "expr": "sum(revoke_success_total)",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{ "color": "green", "value": null }]
               }
             },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "orientation": "auto",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto"
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Revokes Over Time (By Permission)",
+          "id": 1102,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 6, "w": 16, "x": 8, "y": 0 },
+          "targets": [
             {
-              "id": "reduce",
+              "expr": "sum by(database, permission) (rate(revoke_success_total[5m]))",
+              "refId": "A",
+              "legendFormat": "{{database}} {{permission}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          }
+        },
+        {
+          "type": "table",
+          "title": "Revokes (by DB, Permission)",
+          "id": 1103,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 5, "w": 12, "x": 0, "y": 6 },
+          "targets": [
+            {
+              "expr": "sum by(database, permission) (revoke_success_total)",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
               "options": {
-                "reducers": [
-                  "lastNotNull"
-                ]
+                "indexByName": {
+                  "database": 0,
+                  "permission": 1,
+                  "Value": 2
+                },
+                "renameByName": {
+                  "database": "DB",
+                  "permission": "Permission",
+                  "Value": "Revokes"
+                }
               }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": { "showHeader": true }
+        },
+        {
+          "type": "table",
+          "title": "Revoke Failures (DB, RequestedBy)",
+          "id": 1104,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 5, "w": 12, "x": 12, "y": 6 },
+          "targets": [
+            {
+              "expr": "sum by(database, requestedBy) (revoke_failed_total)",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "database": 0,
+                  "requestedBy": 1,
+                  "Value": 2
+                },
+                "renameByName": {
+                  "database": "DB",
+                  "requestedBy": "RequestedBy",
+                  "Value": "Failures"
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": { "showHeader": true }
+        }
+      ]
+    },
+    {
+      "title": "Security Alerts (last 1h)",
+      "collapsed": false,
+      "panels": [
+        {
+          "id": 5001,
+          "title": "🔐 JWT Expired Tokens (1h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(jwt_token_expired_total{application=\"$application\", instance=\"$instance\"}[1h])"
             }
           ]
         },
         {
-          "type": "barchart",
-          "title": "♻️ Revoke Success by DB & Permission",
-          "id": 3006,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 8
-          },
+          "id": 5002,
+          "title": "🧿 TTL Too Long Errors (1h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by(database, permission) (revoke_success_total{application=\"$application\", instance=\"$instance\"})"
+              "expr": "increase(jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"}[1h])"
             }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "decimals": 0
-            }
-          },
-          "options": {
-            "orientation": "horizontal",
-            "xField": "database",
-            "groupByField": "permission",
-            "showLegend": true,
-            "legend": {
-              "displayMode": "table",
-              "placement": "bottom"
-            }
-          }
+          ]
         },
         {
-          "type": "table",
-          "title": "⚠️ Revoke Failures by DB & RequestedBy",
-          "id": 3007,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 6,
-            "w": 24,
-            "x": 0,
-            "y": 14
-          },
+          "id": 5003,
+          "title": "❌ Invalid Signatures (1h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by(database, requestedBy) (revoke_failed_total{application=\"$application\", instance=\"$instance\"})"
+              "expr": "increase(jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"}[1h])"
             }
-          ],
-          "transformations": [
+          ]
+        },
+        {
+          "id": 5004,
+          "title": "🔒 Malformed JWTs (1h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "targets": [
             {
-              "id": "labelsToFields",
-              "options": {
-                "mode": "columns"
-              }
-            },
+              "refId": "A",
+              "expr": "increase(jwt_malformed_total{application=\"$application\", instance=\"$instance\"}[1h])"
+            }
+          ]
+        },
+        {
+          "id": 5005,
+          "title": "👤 Unknown Users (1h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 12, "x": 0, "y": 4 },
+          "targets": [
             {
-              "id": "reduce",
-              "options": {
-                "reducers": [
-                  "lastNotNull"
-                ]
-              }
+              "refId": "A",
+              "expr": "increase(jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"}[1h])"
+            }
+          ]
+        },
+        {
+          "id": 5006,
+          "title": "🚫 Missing Subject (1h)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"}[1h])"
             }
           ]
         }
       ]
     },
     {
-      "title": "Security Metrics",
+      "title": "Security Totals (cumulative)",
       "type": "row",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
+      "collapsed": true,
       "panels": [
         {
-          "id": 1201,
-          "title": "🔐 JWT Failures Total (last 1h)",
+          "id": 5101,
+          "title": "🔐 JWT Expired Tokens (Total)",
           "type": "stat",
-          "datasource": "Prometheus",
           "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(increase(security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\"}[1h]))"
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "short",
-              "decimals": 0,
-              "color": { "mode": "thresholds" },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "orange", "value": 10 },
-                  { "color": "red", "value": 50 }
-                ]
-              }
-            }
-          },
-          "options": {
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
-            }
-          }
-        },
-        {
-          "id": 1202,
-          "title": "📊 JWT Failure Events by Reason (last 1h)",
-          "type": "table",
-          "datasource": "Prometheus",
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "increase(security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\"}[1h])"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "labelsToFields",
-              "options": {
-                "mode": "columns",
-                "include": ["reason"]
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": ["Time", "reason"]
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "field": "Time",
-                "desc": true
-              }
+              "expr": "sum(jwt_token_expired_total{application=\"$application\", instance=\"$instance\"})"
             }
           ]
         },
         {
-          "id": 1203,
-          "title": "👤 JWT Rejection Events by Subject (last 1h)",
-          "type": "table",
-          "datasource": "Prometheus",
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "increase(security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\", reason=\"user_not_in_allowlist\"}[1h])"
-            }
-          ],
-          "transformations": [
-            {
-              "id": "labelsToFields",
-              "options": {
-                "mode": "columns",
-                "include": ["subject"]
-              }
-            },
-            {
-              "id": "filterFieldsByName",
-              "options": {
-                "include": ["Time", "subject"]
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "field": "Time",
-                "desc": true
-              }
-            }
-          ]
-        },
-        {
-          "id": 1204,
-          "title": "📈 JWT Failure Rate (avg 5m)",
+          "id": 5102,
+          "title": "🧿 TTL Too Long Errors (Total)",
           "type": "stat",
-          "datasource": "Prometheus",
           "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(rate(security_jwt_verification_failed_total{application=\"$application\", instance=\"$instance\"}[5m]))"
+              "expr": "sum(jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})"
             }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "ops",
-              "decimals": 2
+          ]
+        },
+        {
+          "id": 5103,
+          "title": "❌ Invalid Signatures (Total)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})"
             }
-          },
-          "options": {
-            "reduceOptions": {
-              "values": false,
-              "calcs": ["lastNotNull"]
+          ]
+        },
+        {
+          "id": 5104,
+          "title": "🔒 Malformed JWTs (Total)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(jwt_malformed_total{application=\"$application\", instance=\"$instance\"})"
             }
-          }
+          ]
+        },
+        {
+          "id": 5105,
+          "title": "👤 Unknown Users (Total)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 12, "x": 0, "y": 4 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})"
+            }
+          ]
+        },
+        {
+          "id": 5106,
+          "title": "🚫 Missing Subject (Total)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})"
+            }
+          ]
         }
       ]
     },
-
 
 
     {

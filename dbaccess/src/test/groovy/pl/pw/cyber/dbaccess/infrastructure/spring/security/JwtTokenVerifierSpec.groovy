@@ -60,7 +60,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Invalid signature"
+            ex.message == "Invalid signature"
     }
 
     def "should fail if token is unsigned"() {
@@ -90,7 +90,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Token expired"
+            ex.message == "Token expired"
     }
 
     def "should fail with invalid algorithm (RSA signed)"() {
@@ -103,7 +103,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.message == "Invalid token"
+            ex.message == "Unsupported JWS algorithm RS256, must be ES256"
     }
 
     def "should fail with wrong issuer"() {
@@ -119,7 +119,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Invalid issuer"
+            ex.message == "Invalid issuer"
     }
 
     def "should fail with wrong audience"() {
@@ -135,6 +135,6 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Invalid audience"
+            ex.message == "Invalid audience"
     }
 }

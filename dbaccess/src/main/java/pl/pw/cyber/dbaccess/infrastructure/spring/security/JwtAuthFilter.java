@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +20,7 @@ import static pl.pw.cyber.dbaccess.infrastructure.spring.security.SecurityConfig
 
 @Slf4j
 class JwtAuthFilter extends OncePerRequestFilter {
+
     private static final List<String> PUBLIC_PATHS = List.of(
       "/swagger-ui.html",
       "/swagger-ui",
@@ -29,15 +29,15 @@ class JwtAuthFilter extends OncePerRequestFilter {
       "/v3/api-docs",
       "/v3/api-docs/"
     );
+
     private final JwtTokenVerifier jwtTokenVerifier;
     private final UserRepository userRepository;
     private final MeterRegistry meterRegistry;
     private static final List<SimpleGrantedAuthority> DEFAULT_ROLE = List.of(new SimpleGrantedAuthority("ROLE_REQUESTER"));
 
-
     @Autowired
-    JwtAuthFilter(JwtTokenVerifier jwtTokenGenerator, UserRepository userRepository, MeterRegistry meterRegistry) {
-        this.jwtTokenVerifier = jwtTokenGenerator;
+    JwtAuthFilter(JwtTokenVerifier jwtTokenVerifier, UserRepository userRepository, MeterRegistry meterRegistry) {
+        this.jwtTokenVerifier = jwtTokenVerifier;
         this.userRepository = userRepository;
         this.meterRegistry = meterRegistry;
     }
@@ -58,7 +58,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
                 if (username == null || username.isBlank()) {
                     log.warn("Username is null or blank");
-                    recordSecurityFailureWithoutSubject("subject_blank");
+                    meterRegistry.counter("jwt_missing_subject_total").increment();
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid token");
                     return;
                 }
@@ -67,7 +67,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
                 if (userOpt.isEmpty()) {
                     log.warn("User: {} not found", username);
                     request.setAttribute(AUTHORIZATION_FAILURE_ATTRIBUTE, true);
-                    recordSecurityFailureWithSubject("user_not_in_allowlist", username);
+                    meterRegistry.counter("jwt_user_not_in_allowlist_total").increment();
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
                     return;
                 }
@@ -100,18 +100,5 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
     private static boolean isBearer(String authHeader) {
         return authHeader != null && authHeader.startsWith("Bearer ");
-    }
-
-    private void recordSecurityFailureWithSubject(String reason, String subject) {
-        String sanitizedSubject = StringUtils.isNotBlank(subject) ? subject : "unknown";
-        meterRegistry.counter("security_jwt_verification_failed_total",
-          "reason", reason,
-          "subject", sanitizedSubject).increment();
-    }
-
-    private void recordSecurityFailureWithoutSubject(String reason) {
-        meterRegistry.counter("security_jwt_verification_failed_total",
-          "reason", reason,
-          "subject", "none").increment();
     }
 }
