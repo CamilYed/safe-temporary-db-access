@@ -57,11 +57,10 @@ class AuthenticationIT extends BaseIT implements
         then:
             assertThat(response).hasStatusCode(401)
         and:
-            warnLogCaptured("JWT verification failed: Token expired")
+            warnLogCaptured("JWT expired:")
         and:
             metricWasExposed {
-                hasName("security_jwt_verification_failed_total")
-                hasTag("reason", "expired")
+                hasName("jwt_token_expired_total")
                 hasValueGreaterThan(0.0)
             }
 
@@ -86,11 +85,10 @@ class AuthenticationIT extends BaseIT implements
         then:
             assertThat(response).hasStatusCode(401)
         and:
-            warnLogCaptured("JWT TTL exceeds the maximum allowed")
+            warnLogCaptured("JWT TTL exceeds maximum allowed")
         and:
             metricWasExposed {
-                hasName("security_jwt_verification_failed_total")
-                hasTag("reason", "expired")
+                hasName("jwt_token_ttl_too_long_total")
                 hasValueGreaterThan(0.0)
             }
 
@@ -107,11 +105,10 @@ class AuthenticationIT extends BaseIT implements
         then:
             assertThat(response).hasStatusCode(401)
         and:
-            warnLogCaptured("JWT verification failed: Invalid JWS header: Invalid JSON object")
+            warnLogCaptured("JWT verification failed (parse or unknown error)")
         and:
             metricWasExposed {
-                hasName("security_jwt_verification_failed_total")
-                hasTag("reason", "expired")
+                hasName("jwt_malformed_total")
                 hasValueGreaterThan(0.0)
             }
 

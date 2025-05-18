@@ -6,6 +6,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
 import pl.pw.cyber.dbaccess.testing.dsl.fixtures.JwtTokenFixture
 import spock.lang.Specification
 
+import java.security.InvalidAlgorithmParameterException
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
@@ -28,6 +29,16 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
         privateKey = keyPair.private as ECPrivateKey
         verifier = new JwtTokenVerifier(CLOCK, keyPair.public as ECPublicKey, new SimpleMeterRegistry())
         tokenGenerator = new TestJwtTokenGenerator(privateKey)
+    }
+
+    def "should fail if EC key is too weak"() {
+        when:
+            def weakKey = generateWeakECKeyPair()
+            new JwtTokenVerifier(CLOCK, weakKey.public as ECPublicKey, new SimpleMeterRegistry())
+
+        then:
+            def ex = thrown(InvalidAlgorithmParameterException)
+            ex.message == "Curve not supported: secp128r1 (1.3.132.0.28)"
     }
 
     def "should verify valid token with EC keys"() {
@@ -60,7 +71,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Invalid signature"
+            ex.message == "Invalid signature"
     }
 
     def "should fail if token is unsigned"() {
@@ -90,7 +101,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Token expired"
+            ex.message == "Token expired"
     }
 
     def "should fail with invalid algorithm (RSA signed)"() {
@@ -103,7 +114,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.message == "Invalid token"
+            ex.message == "Unsupported JWS algorithm RS256, must be ES256"
     }
 
     def "should fail with wrong issuer"() {
@@ -119,7 +130,7 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Invalid issuer"
+            ex.message == "Invalid issuer"
     }
 
     def "should fail with wrong audience"() {
@@ -135,6 +146,6 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
 
         then:
             def ex = thrown(SecurityException)
-            ex.cause.message == "Invalid audience"
+            ex.message == "Invalid audience"
     }
 }

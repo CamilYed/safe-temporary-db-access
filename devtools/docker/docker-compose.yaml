@@ -42,6 +42,7 @@ services:
     env_file:
       - ./../.env
     volumes:
+      - prometheus-data:/prometheus
       - ./../../observability/prometheus.local.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
@@ -74,3 +75,4 @@ volumes:
   pgdata2:
   mongodata:
   grafana-data:
+  prometheus-data:

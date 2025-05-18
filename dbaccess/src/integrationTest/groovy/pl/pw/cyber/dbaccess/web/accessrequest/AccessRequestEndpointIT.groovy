@@ -83,11 +83,11 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             }
 
         when:
-            def response = accessRequest(
-                    anAccessRequest()
-                            .withTargetDatabase("test_db")
-                            .withPermissionLevel("READ_ONLY")
-            )
+            def response = accessRequestBy("user") {
+                anAccessRequest()
+                        .withTargetDatabase("test_db")
+                        .withPermissionLevel("READ_ONLY")
+            }
 
         then:
             assertThat(response).isOK()
@@ -125,6 +125,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 hasName("access_success_total")
                 hasTag("database", "test_db")
                 hasTag("permission", "READ_ONLY")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -143,11 +144,11 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             }
 
         when:
-            def response = accessRequest(
-                    anAccessRequest()
-                            .withTargetDatabase("test_db")
-                            .withPermissionLevel("READ_WRITE")
-            )
+            def response = accessRequestBy("user") {
+                anAccessRequest()
+                        .withTargetDatabase("test_db")
+                        .withPermissionLevel("READ_WRITE")
+            }
 
         then:
             assertThat(response).isOK()
@@ -195,6 +196,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 hasName("access_success_total")
                 hasTag("database", "test_db")
                 hasTag("permission", "READ_WRITE")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -213,11 +215,11 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             }
 
         when:
-            def response = accessRequest(
-                    anAccessRequest()
-                            .withTargetDatabase("test_db")
-                            .withPermissionLevel("DELETE")
-            )
+            def response = accessRequestBy("user") {
+                anAccessRequest()
+                        .withTargetDatabase("test_db")
+                        .withPermissionLevel("DELETE")
+            }
 
         then:
             assertThat(response).isOK()
@@ -261,6 +263,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
                 hasName("access_success_total")
                 hasTag("database", "test_db")
                 hasTag("permission", "DELETE")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -284,7 +287,10 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
     def "should handle failure when no resolving database"() {
         given:
-            thereIs(anExpiredInvalidAuditLog().withTargetDatabase("nonexistent_db"))
+            thereIs(anExpiredInvalidAuditLog()
+                    .withRequestedBy("user")
+                    .withTargetDatabase("nonexistent_db")
+            )
 
         and:
             noAnyResolvableDatabases()
@@ -298,13 +304,18 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             metricWasExposed {
                 hasName("revoke_failed_total")
                 hasTag("database", "nonexistent_db")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
 
     def "should handle failure when revoking invalid audit log"() {
         given:
-            thereIs(anExpiredInvalidAuditLog().withTargetDatabase("test_db").withGrantedUsername("nonexistent_user"))
+            thereIs(anExpiredInvalidAuditLog()
+                    .withRequestedBy("user")
+                    .withTargetDatabase("test_db")
+                    .withGrantedUsername("nonexistent_user")
+            )
 
         and:
             resolvedDatabaseIsRunning(aResolvableDatabase().databaseName("test_db"))
@@ -319,13 +330,14 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             metricWasExposed {
                 hasName("revoke_failed_total")
                 hasTag("database", "test_db")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
 
     def "should handle failure when revoking due to postgres not available"() {
         given:
-            thereIs(anExpiredAuditLog().withTargetDatabase("test_db"))
+            thereIs(anExpiredAuditLog().withRequestedBy("user").withTargetDatabase("test_db"))
 
         when:
             manuallyTriggerScheduler()
@@ -337,6 +349,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             metricWasExposed {
                 hasName("revoke_failed_total")
                 hasTag("database", "test_db")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -451,6 +464,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             metricWasExposed {
                 hasName("revoke_success_total")
                 hasTag("database", "revoke_db")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }
@@ -465,6 +479,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
 
         and:
             thereIs(anExpiredInvalidAuditLog()
+                    .withRequestedBy("user")
                     .withTargetDatabase("roleless_db")
                     .withGrantedUsername("user7g5m9dzq")
             )
@@ -499,6 +514,7 @@ class AccessRequestEndpointIT extends MongoBaseIT implements
             metricWasExposed {
                 hasName("revoke_success_total")
                 hasTag("database", "roleless_db")
+                hasTag("requestedBy", "user")
                 hasValueGreaterThan(0.0)
             }
     }

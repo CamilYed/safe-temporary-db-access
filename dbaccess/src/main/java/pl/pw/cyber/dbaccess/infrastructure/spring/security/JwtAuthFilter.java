@@ -20,6 +20,7 @@ import static pl.pw.cyber.dbaccess.infrastructure.spring.security.SecurityConfig
 
 @Slf4j
 class JwtAuthFilter extends OncePerRequestFilter {
+
     private static final List<String> PUBLIC_PATHS = List.of(
       "/swagger-ui.html",
       "/swagger-ui",
@@ -28,15 +29,15 @@ class JwtAuthFilter extends OncePerRequestFilter {
       "/v3/api-docs",
       "/v3/api-docs/"
     );
+
     private final JwtTokenVerifier jwtTokenVerifier;
     private final UserRepository userRepository;
     private final MeterRegistry meterRegistry;
     private static final List<SimpleGrantedAuthority> DEFAULT_ROLE = List.of(new SimpleGrantedAuthority("ROLE_REQUESTER"));
 
-
     @Autowired
-    JwtAuthFilter(JwtTokenVerifier jwtTokenGenerator, UserRepository userRepository, MeterRegistry meterRegistry) {
-        this.jwtTokenVerifier = jwtTokenGenerator;
+    JwtAuthFilter(JwtTokenVerifier jwtTokenVerifier, UserRepository userRepository, MeterRegistry meterRegistry) {
+        this.jwtTokenVerifier = jwtTokenVerifier;
         this.userRepository = userRepository;
         this.meterRegistry = meterRegistry;
     }
@@ -57,7 +58,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
                 if (username == null || username.isBlank()) {
                     log.warn("Username is null or blank");
-                    recordSecurityFailure("subject_blank");
+                    meterRegistry.counter("jwt_missing_subject_total").increment();
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid token");
                     return;
                 }
@@ -66,7 +67,7 @@ class JwtAuthFilter extends OncePerRequestFilter {
                 if (userOpt.isEmpty()) {
                     log.warn("User: {} not found", username);
                     request.setAttribute(AUTHORIZATION_FAILURE_ATTRIBUTE, true);
-                    recordSecurityFailure("user_not_in_allowlist");
+                    meterRegistry.counter("jwt_user_not_in_allowlist_total").increment();
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
                     return;
                 }
@@ -99,9 +100,5 @@ class JwtAuthFilter extends OncePerRequestFilter {
 
     private static boolean isBearer(String authHeader) {
         return authHeader != null && authHeader.startsWith("Bearer ");
-    }
-
-    private void recordSecurityFailure(String reason) {
-        meterRegistry.counter("security_jwt_verification_failed_total", "reason", reason).increment();
     }
 }
