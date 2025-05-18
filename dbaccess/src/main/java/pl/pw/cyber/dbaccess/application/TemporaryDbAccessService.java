@@ -1,7 +1,6 @@
 package pl.pw.cyber.dbaccess.application;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import pl.pw.cyber.dbaccess.application.commands.GrantTemporaryAccessCommand;
@@ -27,8 +26,6 @@ public class TemporaryDbAccessService {
     private final TemporaryAccessAuditLogRepository auditLogRepository;
 
     public Result<TemporaryAccessGranted> accessRequest(GrantTemporaryAccessCommand command) {
-        Timer.Sample sample = Timer.start(meterRegistry);
-
         return Result.of(() -> {
               log.info("Granting temporary access to database '{}' for user '{}'", command.targetDatabase(), command.requestedBy());
 
@@ -42,11 +39,6 @@ public class TemporaryDbAccessService {
               );
           })
           .onSuccess(() -> {
-              sample.stop(Timer.builder("access_grant_duration_seconds")
-                .description("Time taken to grant DB access")
-                .publishPercentileHistogram()
-                .register(meterRegistry));
-
               countAccessSuccessTotalMetric(command);
           })
           .onFailure(ex -> {
@@ -154,7 +146,8 @@ public class TemporaryDbAccessService {
         meterRegistry.counter(
           "revoke_success_total",
           "database", entry.targetDatabase(),
-          "permission", entry.permissionLevel()
+          "permission", entry.permissionLevel(),
+          "requestedBy", entry.requestedByUsername()
         ).increment();
     }
 
