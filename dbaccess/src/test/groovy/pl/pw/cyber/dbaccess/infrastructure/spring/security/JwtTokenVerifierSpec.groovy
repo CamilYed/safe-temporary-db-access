@@ -6,6 +6,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
 import pl.pw.cyber.dbaccess.testing.dsl.fixtures.JwtTokenFixture
 import spock.lang.Specification
 
+import java.security.InvalidAlgorithmParameterException
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.interfaces.RSAPrivateKey
@@ -28,6 +29,16 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
         privateKey = keyPair.private as ECPrivateKey
         verifier = new JwtTokenVerifier(CLOCK, keyPair.public as ECPublicKey, new SimpleMeterRegistry())
         tokenGenerator = new TestJwtTokenGenerator(privateKey)
+    }
+
+    def "should fail if EC key is too weak"() {
+        when:
+            def weakKey = generateWeakECKeyPair()
+            new JwtTokenVerifier(CLOCK, weakKey.public as ECPublicKey, new SimpleMeterRegistry())
+
+        then:
+            def ex = thrown(InvalidAlgorithmParameterException)
+            ex.message == "Curve not supported: secp128r1 (1.3.132.0.28)"
     }
 
     def "should verify valid token with EC keys"() {

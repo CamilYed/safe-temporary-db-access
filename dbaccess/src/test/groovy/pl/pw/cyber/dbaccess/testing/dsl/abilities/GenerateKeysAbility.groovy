@@ -13,6 +13,10 @@ trait GenerateKeysAbility {
         return keyGen.generateKeyPair()
     }
 
+    KeyPair generateWeakECKeyPair() {
+        return generateECKeyPair("secp128r1")
+    }
+
     KeyPair generateRSAKeyPair() {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA")
         keyGen.initialize(2048)

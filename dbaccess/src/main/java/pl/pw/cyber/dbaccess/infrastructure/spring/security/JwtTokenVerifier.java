@@ -20,23 +20,15 @@ class JwtTokenVerifier {
     private final ECPublicKey publicKey;
     private final MeterRegistry meterRegistry;
 
-    private static final int MINIMUM_PUBLIC_EC_KEY_LENGTH = 256;
     private static final Duration MAX_TOKEN_TTL = Duration.ofMinutes(5);
 
     static final String ISSUER = "dbaccess-api";
     static final String AUDIENCE = "dbaccess-client";
 
     JwtTokenVerifier(Clock clock, ECPublicKey publicKey, MeterRegistry meterRegistry) {
-        if (isKeyTooWeak(publicKey)) {
-            throw new IllegalArgumentException("EC key too weak: minimum 256 bits required");
-        }
         this.clock = clock;
         this.publicKey = publicKey;
         this.meterRegistry = meterRegistry;
-    }
-
-    private static boolean isKeyTooWeak(ECPublicKey publicKey) {
-        return publicKey.getParams().getCurve().getField().getFieldSize() < MINIMUM_PUBLIC_EC_KEY_LENGTH;
     }
 
     public JWTClaimsSet verify(String token) {
