@@ -56,18 +56,11 @@ class JwtAuthFilter extends OncePerRequestFilter {
                 var claims = jwtTokenVerifier.verify(token);
                 var username = claims.getSubject();
 
-                if (username == null || username.isBlank()) {
-                    log.warn("Username is null or blank");
-                    meterRegistry.counter("jwt_missing_subject_total").increment();
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid token");
-                    return;
-                }
-
                 var userOpt = userRepository.findBy(username);
                 if (userOpt.isEmpty()) {
                     log.warn("User: {} not found", username);
                     request.setAttribute(AUTHORIZATION_FAILURE_ATTRIBUTE, true);
-                    meterRegistry.counter("jwt_user_not_in_allowlist_total").increment();
+                    meterRegistry.counter("jwt_user_not_in_allowlist_total", "subject", username).increment();
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
                     return;
                 }

@@ -54,13 +54,20 @@ class JwtTokenVerifier {
 
     private JWTClaimsSet extractJwtClaimsSet(SignedJWT jwt) throws ParseException {
         var claims = jwt.getJWTClaimsSet();
-        var now = Date.from(clock.instant());
 
+        var subject = claims.getSubject();
+        if (subject == null || subject.isBlank()) {
+            log.warn("JWT subject is null or blank");
+            meterRegistry.counter("jwt_missing_subject_total", "subject", "null_or_blank").increment();
+            throw new SecurityException("Missing subject");
+        }
+
+        var now = Date.from(clock.instant());
         log.info("Checking token, current time: {}", now);
 
         if (claims.getExpirationTime().before(now)) {
             log.warn("JWT expired: {}", claims.getSubject());
-            meterRegistry.counter("jwt_token_expired_total").increment();
+            meterRegistry.counter("jwt_token_expired_total", "subject", subject).increment();
             throw new SecurityException("Token expired");
         }
 
@@ -69,19 +76,19 @@ class JwtTokenVerifier {
 
         if (tokenTtl.compareTo(MAX_TOKEN_TTL) > 0) {
             log.warn("JWT TTL exceeds maximum allowed: {}", tokenTtl);
-            meterRegistry.counter("jwt_token_ttl_too_long_total").increment();
+            meterRegistry.counter("jwt_token_ttl_too_long_total", "subject", subject).increment();
             throw new SecurityException("Token TTL too long");
         }
 
         if (!ISSUER.equals(claims.getIssuer())) {
             log.warn("JWT issuer invalid: {}", claims.getIssuer());
-            meterRegistry.counter("jwt_invalid_issuer_total").increment();
+            meterRegistry.counter("jwt_invalid_issuer_total", "subject", subject).increment();
             throw new SecurityException("Invalid issuer");
         }
 
         if (!claims.getAudience().contains(AUDIENCE)) {
             log.warn("JWT audience invalid: {}", claims.getAudience());
-            meterRegistry.counter("jwt_invalid_audience_total").increment();
+            meterRegistry.counter("jwt_invalid_audience_total", "subject", subject).increment();
             throw new SecurityException("Invalid audience");
         }
 

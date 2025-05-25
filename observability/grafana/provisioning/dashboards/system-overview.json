@@ -81,7 +81,12 @@
           "title": "Accesses Granted (Cumulative)",
           "id": 1001,
           "datasource": "Prometheus",
-          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 0,
+            "y": 0
+          },
           "targets": [
             {
               "expr": "sum(access_success_total)",
@@ -92,18 +97,29 @@
             "defaults": {
               "unit": "none",
               "decimals": 0,
-              "color": { "mode": "thresholds" },
+              "color": {
+                "mode": "thresholds"
+              },
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
-                  { "color": "green", "value": null }
+                  {
+                    "color": "green",
+                    "value": null
+                  }
                 ]
               }
             },
             "overrides": []
           },
           "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
             "orientation": "auto",
             "colorMode": "value",
             "graphMode": "none",
@@ -115,7 +131,12 @@
           "title": "Accesses Over Time (By RequestedBy)",
           "id": 1002,
           "datasource": "Prometheus",
-          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 4 },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 4
+          },
           "targets": [
             {
               "expr": "sum by(requestedBy) (rate(access_success_total[5m]))",
@@ -130,8 +151,15 @@
             "overrides": []
           },
           "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           }
         },
         {
@@ -139,7 +167,12 @@
           "title": "Accesses by DB, Permission, TTL, User",
           "id": 1003,
           "datasource": "Prometheus",
-          "gridPos": { "h": 5, "w": 24, "x": 0, "y": 10 },
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 10
+          },
           "targets": [
             {
               "expr": "sum by(database, permission, ttl, requestedBy) (access_success_total)",
@@ -152,7 +185,9 @@
             {
               "id": "organize",
               "options": {
-                "excludeByName": { "__name__": true },
+                "excludeByName": {
+                  "__name__": true
+                },
                 "indexByName": {
                   "database": 0,
                   "permission": 1,
@@ -170,7 +205,9 @@
               }
             }
           ],
-          "options": { "showHeader": true },
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
               "unit": "none",
@@ -191,7 +228,12 @@
           "title": "Revokes (Cumulative)",
           "id": 1101,
           "datasource": "Prometheus",
-          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 0,
+            "y": 0
+          },
           "targets": [
             {
               "expr": "sum(revoke_success_total)",
@@ -202,16 +244,29 @@
             "defaults": {
               "unit": "none",
               "decimals": 0,
-              "color": { "mode": "thresholds" },
+              "color": {
+                "mode": "thresholds"
+              },
               "thresholds": {
                 "mode": "absolute",
-                "steps": [{ "color": "green", "value": null }]
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
               }
             },
             "overrides": []
           },
           "options": {
-            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
             "orientation": "auto",
             "colorMode": "value",
             "graphMode": "none",
@@ -223,7 +278,12 @@
           "title": "Revokes Over Time (By Permission)",
           "id": 1102,
           "datasource": "Prometheus",
-          "gridPos": { "h": 6, "w": 16, "x": 8, "y": 0 },
+          "gridPos": {
+            "h": 6,
+            "w": 16,
+            "x": 8,
+            "y": 0
+          },
           "targets": [
             {
               "expr": "sum by(database, permission) (rate(revoke_success_total[5m]))",
@@ -238,8 +298,15 @@
             "overrides": []
           },
           "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           }
         },
         {
@@ -247,7 +314,12 @@
           "title": "Revokes (by DB, Permission)",
           "id": 1103,
           "datasource": "Prometheus",
-          "gridPos": { "h": 5, "w": 12, "x": 0, "y": 6 },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
           "targets": [
             {
               "expr": "sum by(database, permission) (revoke_success_total)",
@@ -280,14 +352,21 @@
             },
             "overrides": []
           },
-          "options": { "showHeader": true }
+          "options": {
+            "showHeader": true
+          }
         },
         {
           "type": "table",
           "title": "Revoke Failures (DB, RequestedBy)",
           "id": 1104,
           "datasource": "Prometheus",
-          "gridPos": { "h": 5, "w": 12, "x": 12, "y": 6 },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
           "targets": [
             {
               "expr": "sum by(database, requestedBy) (revoke_failed_total)",
@@ -320,169 +399,601 @@
             },
             "overrides": []
           },
-          "options": { "showHeader": true }
+          "options": {
+            "showHeader": true
+          }
         }
       ]
     },
     {
-      "title": "Security Alerts (last 1h)",
+      "title": "Security Alerts (by subject)",
+      "type": "row",
       "collapsed": false,
       "panels": [
         {
-          "id": 5001,
-          "title": "🔐 JWT Expired Tokens (1h)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "type": "table",
+          "title": "\ud83d\udd10 JWT Expired Tokens (by subject)",
+          "id": 6000,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_token_expired_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "increase(jwt_token_expired_total{application=\"$application\", instance=\"$instance\"}[1h])"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5002,
-          "title": "🧿 TTL Too Long Errors (1h)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "type": "table",
+          "title": "\ud83e\uddff TTL Too Long Errors (by subject)",
+          "id": 6001,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "increase(jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"}[1h])"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5003,
-          "title": "❌ Invalid Signatures (1h)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "type": "table",
+          "title": "\u274c Invalid Signatures total",
+          "id": 6002,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "increase(jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"}[1h])"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5004,
-          "title": "🔒 Malformed JWTs (1h)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "type": "table",
+          "title": "\ud83d\udd12 Malformed JWTs (by subject)",
+          "id": 6003,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_malformed_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "increase(jwt_malformed_total{application=\"$application\", instance=\"$instance\"}[1h])"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5005,
-          "title": "👤 Unknown Users (1h)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 12, "x": 0, "y": 4 },
+          "type": "table",
+          "title": "\ud83d\udc64 Unknown Users (by subject)",
+          "id": 6004,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "increase(jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"}[1h])"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5006,
-          "title": "🚫 Missing Subject (1h)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 },
+          "type": "table",
+          "title": "\ud83d\udeab Missing Subject (by subject)",
+          "id": 6005,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "increase(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"}[1h])"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udea6 Rate Limit Exceeded (by subject)",
+          "id": 6006,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (rate_limit_exceeded_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         }
       ]
     },
     {
-      "title": "Security Totals (cumulative)",
+      "title": "Security Totals (by subject)",
       "type": "row",
-      "collapsed": true,
+      "collapsed": false,
       "panels": [
         {
-          "id": 5101,
-          "title": "🔐 JWT Expired Tokens (Total)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "type": "table",
+          "title": "\ud83d\udd10 JWT Expired Tokens (by subject)",
+          "id": 6100,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_token_expired_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "sum(jwt_token_expired_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5102,
-          "title": "🧿 TTL Too Long Errors (Total)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "type": "table",
+          "title": "\ud83e\uddff TTL Too Long Errors (by subject)",
+          "id": 6101,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "sum(jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5103,
-          "title": "❌ Invalid Signatures (Total)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "type": "table",
+          "title": "\u274c Invalid Signatures total",
+          "id": 6102,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "sum(jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5104,
-          "title": "🔒 Malformed JWTs (Total)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "type": "table",
+          "title": "\ud83d\udd12 Malformed JWTs (by subject)",
+          "id": 6103,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_malformed_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "sum(jwt_malformed_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5105,
-          "title": "👤 Unknown Users (Total)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 12, "x": 0, "y": 4 },
+          "type": "table",
+          "title": "\ud83d\udc64 Unknown Users (by subject)",
+          "id": 6104,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "sum(jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         },
         {
-          "id": 5106,
-          "title": "🚫 Missing Subject (Total)",
-          "type": "stat",
-          "gridPos": { "h": 4, "w": 12, "x": 12, "y": 4 },
+          "type": "table",
+          "title": "\ud83d\udeab Missing Subject (by subject)",
+          "id": 6105,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "datasource": "Prometheus",
           "targets": [
             {
+              "expr": "sum by(subject) (jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "expr": "sum(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})"
+              "format": "table",
+              "instant": true
             }
-          ]
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udea6 Rate Limit Exceeded (by subject)",
+          "id": 6106,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (rate_limit_exceeded_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
         }
       ]
-    },
-
-
+    }
+  ,
     {
       "collapse": false,
       "height": "100px",

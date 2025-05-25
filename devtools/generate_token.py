@@ -141,7 +141,17 @@ def generate_broken_token():
             serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
         ), algorithm="RS256")),
 
-        "e": ("parse_error", lambda: "invalid.token.payload")
+        "e": ("parse_error", lambda: "invalid.token.payload"),
+
+        "f": ("null_subject", lambda: jwt.encode({
+            "sub": None, "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
+
+        "g": ("blank_subject", lambda: jwt.encode({
+            "sub": "  ", "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "iss": ISSUER, "aud": [AUDIENCE]}, load_private_key(), algorithm="ES256")),
     }
 
     console.print("\n[bold cyan]Choose broken token type:[/bold cyan]")

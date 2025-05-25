@@ -40,6 +40,61 @@ class AuthenticationIT extends BaseIT implements
             assertThat(response).hasStatusCode(401)
     }
 
+
+    def "should reject JWT if subject is null (401)"() {
+        given:
+            def token = generateToken(aToken()
+                    .withSubject(null)
+                    .withIssueTime(currentTime())
+                    .withTtl(Duration.ofMinutes(5))
+            )
+
+        when:
+            def response = accessRequestBuilder()
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .makeRequest()
+
+        then:
+            assertThat(response).hasStatusCode(401)
+
+        and:
+            warnLogCaptured("JWT subject is null or blank")
+
+        and:
+            metricWasExposed {
+                hasName("jwt_missing_subject_total")
+                hasTag("subject", "null_or_blank")
+                hasValueGreaterThan(0.0)
+            }
+    }
+
+    def "should reject JWT if subject is blank (401)"() {
+        given:
+            def token = generateToken(aToken()
+                    .withSubject("  ")
+                    .withIssueTime(currentTime())
+                    .withTtl(Duration.ofMinutes(5))
+            )
+
+        when:
+            def response = accessRequestBuilder()
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .makeRequest()
+
+        then:
+            assertThat(response).hasStatusCode(401)
+
+        and:
+            warnLogCaptured("JWT subject is null or blank")
+
+        and:
+            metricWasExposed {
+                hasName("jwt_missing_subject_total")
+                hasTag("subject", "null_or_blank")
+                hasValueGreaterThan(0.0)
+            }
+    }
+
     def "should reject request if JWT is expired (401)"() {
         given:
             currentTimeIs("2025-04-07T12:00:00Z")
@@ -89,6 +144,7 @@ class AuthenticationIT extends BaseIT implements
         and:
             metricWasExposed {
                 hasName("jwt_token_ttl_too_long_total")
+                hasTag("subject", "user-with-long-ttl")
                 hasValueGreaterThan(0.0)
             }
 
@@ -111,6 +167,65 @@ class AuthenticationIT extends BaseIT implements
                 hasName("jwt_malformed_total")
                 hasValueGreaterThan(0.0)
             }
-
     }
+
+    def "should reject JWT if issuer is invalid (401)"() {
+        given:
+            thereIsUser("issuer-user")
+            def token = generateToken(aToken()
+                    .withSubject("issuer-user")
+                    .withIssuer("invalid-issuer")
+                    .withIssueTime(currentTime())
+                    .withTtl(Duration.ofMinutes(5))
+            )
+
+        when:
+            def response = accessRequestBuilder()
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .makeRequest()
+
+        then:
+            assertThat(response).hasStatusCode(401)
+
+        and:
+            warnLogCaptured("JWT issuer invalid")
+
+        and:
+            metricWasExposed {
+                hasName("jwt_invalid_issuer_total")
+                hasTag("subject", "issuer-user")
+                hasValueGreaterThan(0.0)
+            }
+    }
+
+    def "should reject JWT if audience is invalid (401)"() {
+        given:
+            thereIsUser("audience-user")
+            def token = generateToken(aToken()
+                    .withSubject("audience-user")
+                    .withAudience("not-dbaccess-client")
+                    .withIssueTime(currentTime())
+                    .withTtl(Duration.ofMinutes(5))
+            )
+
+        when:
+            def response = accessRequestBuilder()
+                    .withHeader("Authorization", "Bearer ${token}")
+                    .makeRequest()
+
+        then:
+            assertThat(response).hasStatusCode(401)
+
+        and:
+            warnLogCaptured("JWT audience invalid")
+
+        and:
+            metricWasExposed {
+                hasName("jwt_invalid_audience_total")
+                hasTag("subject", "audience-user")
+                hasValueGreaterThan(0.0)
+            }
+    }
+
+
 }

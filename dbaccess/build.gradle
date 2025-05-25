@@ -46,12 +46,13 @@ project.ext.versions = [
         mockito         : '5.11.0',
         byte_buddy      : '1.14.12',
         cglib           : '3.3.0',
-        jsoup           : '1.17.2'
+        jsoup           : '1.17.2',
+        bucket4j        : '8.10.1'
 ]
 
 dependencies {
 
-    compileOnly  "org.projectlombok:lombok:${versions.lombok}"
+    compileOnly "org.projectlombok:lombok:${versions.lombok}"
     annotationProcessor "org.projectlombok:lombok:${versions.lombok}"
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -66,8 +67,9 @@ dependencies {
     implementation 'org.springframework:spring-jdbc'
     implementation "com.nimbusds:nimbus-jose-jwt:${versions.nimbus_jose}"
     implementation "com.github.mvallim:java-fluent-validator:${versions.fluent_validator}"
+    implementation "com.bucket4j:bucket4j-core:${versions.bucket4j}"
 
-    testCompileOnly  "org.projectlombok:lombok:${versions.lombok}"
+    testCompileOnly "org.projectlombok:lombok:${versions.lombok}"
     testAnnotationProcessor "org.projectlombok:lombok:${versions.lombok}"
 
     testImplementation "org.apache.groovy:groovy:${versions.groovy}"
@@ -76,7 +78,7 @@ dependencies {
     testImplementation "net.bytebuddy:byte-buddy:${versions.byte_buddy}"
     testImplementation "cglib:cglib-nodep:${versions.cglib}"
 
-    integrationTestCompileOnly  "org.projectlombok:lombok:${versions.lombok}"
+    integrationTestCompileOnly "org.projectlombok:lombok:${versions.lombok}"
     integrationTestImplementation "org.apache.groovy:groovy-json:${versions.groovy}"
     integrationTestImplementation "org.apache.groovy:groovy:${versions.groovy}"
     integrationTestImplementation "org.spockframework:spock-core:${versions.spock}"
