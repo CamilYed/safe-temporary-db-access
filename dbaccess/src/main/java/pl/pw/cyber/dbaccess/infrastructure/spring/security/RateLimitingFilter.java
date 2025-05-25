@@ -67,8 +67,8 @@ class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String resolveKey() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        return (auth != null && auth.isAuthenticated()) ? auth.getName() : "anonymous";
+        var authentication = (JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
+        return String.valueOf(authentication.getPrincipal());
     }
 
     private void countRateLimitExceeded(String user) {

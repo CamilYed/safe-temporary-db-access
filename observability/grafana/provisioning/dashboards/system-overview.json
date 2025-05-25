@@ -406,387 +406,589 @@
       ]
     },
     {
-      "title": "Security Alerts (last 1h)",
+      "title": "Security Alerts (by subject)",
+      "type": "row",
       "collapsed": false,
       "panels": [
         {
-          "type": "timeseries",
-          "title": "🔐 JWT Expired Tokens (1h, by subject)",
-          "id": 7001,
-          "datasource": "Prometheus",
+          "type": "table",
+          "title": "\ud83d\udd10 JWT Expired Tokens (by subject)",
+          "id": 6000,
           "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 12,
             "x": 0,
             "y": 0
           },
+          "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by(subject) (increase(jwt_token_expired_total{application=\"$application\", instance=\"$instance\"}[1h]))",
+              "expr": "sum by(subject) (jwt_token_expired_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
+              "unit": "short",
               "decimals": 0
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "overrides": []
           }
         },
         {
-          "type": "timeseries",
-          "title": "🧿 TTL Too Long Errors (1h, by subject)",
-          "id": 7002,
-          "datasource": "Prometheus",
+          "type": "table",
+          "title": "\ud83e\uddff TTL Too Long Errors (by subject)",
+          "id": 6001,
           "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 12,
             "x": 12,
             "y": 0
           },
+          "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by(subject) (increase(jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"}[1h]))",
+              "expr": "sum by(subject) (jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
+              "unit": "short",
               "decimals": 0
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "overrides": []
           }
         },
         {
-          "type": "timeseries",
-          "title": "❌ Invalid Signatures (1h, by subject)",
-          "id": 7003,
-          "datasource": "Prometheus",
+          "type": "table",
+          "title": "\u274c Invalid Signatures total",
+          "id": 6002,
           "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 12,
             "x": 0,
-            "y": 6
+            "y": 8
           },
+          "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by(subject) (increase(jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"}[1h]))",
+              "expr": "sum by(subject) (jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
+              "unit": "short",
               "decimals": 0
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "overrides": []
           }
         },
         {
-          "type": "timeseries",
-          "title": "🔒 Malformed JWTs (1h, by subject)",
-          "id": 7004,
-          "datasource": "Prometheus",
+          "type": "table",
+          "title": "\ud83d\udd12 Malformed JWTs (by subject)",
+          "id": 6003,
           "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 12,
             "x": 12,
-            "y": 6
+            "y": 8
           },
+          "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by(subject) (increase(jwt_malformed_total{application=\"$application\", instance=\"$instance\"}[1h]))",
+              "expr": "sum by(subject) (jwt_malformed_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
+              "unit": "short",
               "decimals": 0
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "overrides": []
           }
         },
         {
-          "type": "timeseries",
-          "title": "👤 Unknown Users (1h, by subject)",
-          "id": 7005,
-          "datasource": "Prometheus",
+          "type": "table",
+          "title": "\ud83d\udc64 Unknown Users (by subject)",
+          "id": 6004,
           "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 16
           },
+          "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by(subject) (increase(jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"}[1h]))",
+              "expr": "sum by(subject) (jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
+              "unit": "short",
               "decimals": 0
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "overrides": []
           }
         },
         {
-          "type": "timeseries",
-          "title": "🚫 Missing Subject (1h, by subject)",
-          "id": 7006,
-          "datasource": "Prometheus",
+          "type": "table",
+          "title": "\ud83d\udeab Missing Subject (by subject)",
+          "id": 6005,
           "gridPos": {
-            "h": 6,
+            "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 16
           },
+          "datasource": "Prometheus",
           "targets": [
             {
-              "expr": "sum by(subject) (increase(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"}[1h]))",
+              "expr": "sum by(subject) (jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})",
               "refId": "A",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "ops",
+              "unit": "short",
               "decimals": 0
-            }
-          },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udea6 Rate Limit Exceeded (by subject)",
+          "id": 6006,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (rate_limit_exceeded_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
             }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
           }
         }
       ]
     },
     {
-      "title": "Security Totals (cumulative)",
+      "title": "Security Totals (by subject)",
       "type": "row",
       "collapsed": false,
       "panels": [
         {
-          "id": 5101,
-          "title": "🔐 JWT Expired Tokens (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+          "type": "table",
+          "title": "\ud83d\udd10 JWT Expired Tokens (by subject)",
+          "id": 6100,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
           "datasource": "Prometheus",
           "targets": [
             {
-              "refId": "A",
               "expr": "sum by(subject) (jwt_token_expired_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
-            }
-          ],
-          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
-          }
-        },
-        {
-          "id": 5102,
-          "title": "🧿 TTL Too Long Errors (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
-          "datasource": "Prometheus",
-          "targets": [
-            {
               "refId": "A",
-              "expr": "sum by(subject) (jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
+              "format": "table",
+              "instant": true
             }
           ],
-          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
-          }
-        },
-        {
-          "id": 5103,
-          "title": "❌ Invalid Signatures (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 6 },
-          "datasource": "Prometheus",
-          "targets": [
+          "transformations": [
             {
-              "refId": "A",
-              "expr": "sum by(subject) (jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
             }
           ],
-          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
           "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
-          }
-        },
-        {
-          "id": 5104,
-          "title": "🔒 Malformed JWTs (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 6 },
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "sum by(subject) (jwt_malformed_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
-            }
-          ],
-          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
-          }
-        },
-        {
-          "id": 5105,
-          "title": "👤 Unknown Users (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "sum by(subject) (jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
-            }
-          ],
-          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
-          }
-        },
-        {
-          "id": 5106,
-          "title": "🚫 Missing Subject (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "sum by(subject) (jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
-            }
-          ],
-          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
-          "options": {
-            "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
-            "tooltip": { "mode": "single", "sort": "none" }
-          }
-        },
-        {
-          "id": 5107,
-          "title": "🚦 Rate Limit Exceeded (Total)",
-          "type": "timeseries",
-          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 18 },
-          "datasource": "Prometheus",
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "sum by(subject) (rate_limit_exceeded_total{application=\"$application\", instance=\"$instance\"})",
-              "legendFormat": "{{subject}}"
-            }
-          ],
+            "showHeader": true
+          },
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
-              "decimals": 0,
-              "color": {
-                "mode": "thresholds"
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  { "color": "green", "value": null },
-                  { "color": "orange", "value": 5 },
-                  { "color": "red", "value": 10 }
-                ]
-              }
+              "unit": "short",
+              "decimals": 0
             },
             "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83e\uddff TTL Too Long Errors (by subject)",
+          "id": 6101,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
           },
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (jwt_token_ttl_too_long_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
             }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\u274c Invalid Signatures total",
+          "id": 6102,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (jwt_invalid_signature_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udd12 Malformed JWTs (by subject)",
+          "id": 6103,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (jwt_malformed_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udc64 Unknown Users (by subject)",
+          "id": 6104,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (jwt_user_not_in_allowlist_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udeab Missing Subject (by subject)",
+          "id": 6105,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          }
+        },
+        {
+          "type": "table",
+          "title": "\ud83d\udea6 Rate Limit Exceeded (by subject)",
+          "id": 6106,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+          },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "expr": "sum by(subject) (rate_limit_exceeded_total{application=\"$application\", instance=\"$instance\"})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "subject": "Subject",
+                  "Value": "Count"
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
           }
         }
       ]
