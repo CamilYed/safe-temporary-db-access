@@ -18,4 +18,12 @@ public final class ProblemDetailsBuilder {
         problem.setProperty("errors", errors);
         return problem;
     }
+
+    public static ProblemDetail tooManyRequest(String type) {
+        var problem = ProblemDetail.forStatus(429);
+        problem.setTitle("Too Many Requests");
+        problem.setDetail("Rate limit exceeded. Try again later.");
+        problem.setType(URI.create(type));
+        return problem;
+    }
 }

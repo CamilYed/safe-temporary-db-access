@@ -399,7 +399,40 @@
               "expr": "increase(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"}[1h])"
             }
           ]
+        },
+        {
+          "type": "timeseries",
+          "title": "🚦 Rate Limit Exceeded Over Time (By Subject)",
+          "id": 6001,
+          "datasource": "Prometheus",
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "expr": "sum by(subject) (rate(rate_limit_exceeded_total[5m]))",
+              "refId": "A",
+              "legendFormat": "{{subject}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          }
         }
+
       ]
     },
     {
@@ -478,7 +511,50 @@
               "expr": "sum(jwt_missing_subject_total{application=\"$application\", instance=\"$instance\"})"
             }
           ]
+        },
+        {
+          "id": 5107,
+          "title": "🚦 Rate Limit Exceeded (Total)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
+          "datasource": "Prometheus",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate_limit_exceeded_total{application=\"$application\", instance=\"$instance\"})"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 5 },
+                  { "color": "red", "value": 10 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "orientation": "auto",
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto"
+          }
         }
+
       ]
     },
 

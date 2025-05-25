@@ -36,4 +36,26 @@ class SwaggerDevProfileIT extends DevBaseIT implements
                 }
             }
     }
+
+    def "swagger should not be rate-limited"() {
+        given:
+            def requester = requestedBy("swagger-user")
+
+        when:
+            (1..10).each {
+                def response = requester
+                        .withUrl("/swagger-ui/index.html")
+                        .makeRequestForHtml()
+
+                assert response.statusCode.value() == 200
+            }
+
+        then:
+            def finalResponse = requester
+                    .withUrl("/swagger-ui/index.html")
+                    .makeRequestForHtml()
+
+            assert finalResponse.statusCode.value() == 200
+    }
+
 }

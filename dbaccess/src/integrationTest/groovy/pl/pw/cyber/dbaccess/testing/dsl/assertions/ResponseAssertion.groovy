@@ -14,8 +14,38 @@ class ResponseAssertion {
         return new ResponseAssertion(response)
     }
 
+    static void assertThat(ResponseEntity<Map> response, @DelegatesTo(ResponseAssertion) Closure<?> block) {
+        def assertion = new ResponseAssertion(response)
+        block.delegate = assertion
+        block.resolveStrategy = Closure.DELEGATE_FIRST
+        block.call()
+    }
+
+
     ResponseAssertion isOK() {
         return hasStatusCode(200)
+    }
+
+    ResponseAssertion hasStatus(int expectedStatusCode) {
+        return hasStatusCode(expectedStatusCode)
+    }
+
+    ResponseAssertion hasTitle(String expectedTitle) {
+        def actual = response.body?.title
+        assert actual == expectedTitle : "Expected title '${expectedTitle}' but was '${actual}'"
+        return this
+    }
+
+    ResponseAssertion hasDetail(String expectedDetail) {
+        def actual = response.body?.detail
+        assert actual == expectedDetail : "Expected detail '${expectedDetail}' but was '${actual}'"
+        return this
+    }
+
+    ResponseAssertion hasType(String expectedType) {
+        def actual = response.body?.type
+        assert actual == expectedType : "Expected type '${expectedType}' but was '${actual}'"
+        return this
     }
 
     ResponseAssertion hasStatusCode(int expectedStatusCode) {
