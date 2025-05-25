@@ -52,46 +52,7 @@ class AuthorizationIT extends BaseIT implements
         and:
             metricWasExposed {
                 hasName("jwt_user_not_in_allowlist_total")
-                hasValueGreaterThan(0.0)
-            }
-    }
-
-    def "should reject request if JWT subject is null and increment metric"() {
-        given:
-            def token = generateToken(aToken().withSubject(null))
-
-        when:
-            def response = accessRequestBuilder()
-                    .withHeader("Authorization", "Bearer ${token}")
-                    .makeRequest()
-
-        then:
-            assertThat(response).hasStatusCode(401)
-        and:
-            warnLogCaptured("Username is null or blank")
-        and:
-            metricWasExposed {
-                hasName("jwt_missing_subject_total")
-                hasValueGreaterThan(0.0)
-            }
-    }
-
-    def "should reject request if JWT subject is blank and increment metric"() {
-        given:
-            def token = generateToken(aToken().withSubject(" "))
-
-        when:
-            def response = accessRequestBuilder()
-                    .withHeader("Authorization", "Bearer ${token}")
-                    .makeRequest()
-
-        then:
-            assertThat(response).hasStatusCode(401)
-        and:
-            warnLogCaptured("Username is null or blank")
-        and:
-            metricWasExposed {
-                hasName("jwt_missing_subject_total")
+                hasTag("subject", "not-existing-user")
                 hasValueGreaterThan(0.0)
             }
     }

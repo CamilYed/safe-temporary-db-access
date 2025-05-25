@@ -5,6 +5,7 @@ import pl.pw.cyber.dbaccess.testing.dsl.abilities.GenerateKeysAbility
 import pl.pw.cyber.dbaccess.testing.dsl.builders.MovableClock
 import pl.pw.cyber.dbaccess.testing.dsl.fixtures.JwtTokenFixture
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.security.InvalidAlgorithmParameterException
 import java.security.interfaces.ECPrivateKey
@@ -85,6 +86,26 @@ class JwtTokenVerifierSpec extends Specification implements GenerateKeysAbility 
             def ex = thrown(SecurityException)
             ex.cause instanceof ParseException
             ex.cause.message.contains("Not a JWS header")
+    }
+
+    @Unroll
+    def "should fail if subject is '#value'"() {
+        when:
+            def token = tokenGenerator.generateToken(
+                    aToken()
+                            .withSubject(value)
+                            .withIssueTime(CLOCK.instant())
+                            .withTtl(Duration.ofMinutes(5))
+            )
+
+            verifier.verify(token)
+
+        then:
+            def ex = thrown(SecurityException)
+            ex.message == "Missing subject"
+
+        where:
+            value << [null, "", "   "]
     }
 
     def "should fail if token is expired"() {
