@@ -305,6 +305,13 @@ interface DatabaseAccessProvider {
 
 ---
 
+## 🎥 Demo
+
+[![Watch the demo on YouTube](https://img.youtube.com/vi/MGqyQWGKQB4/0.jpg)](https://www.youtube.com/watch?v=MGqyQWGKQB4)
+
+A short demonstration of how the Safe Temporary DB Access project works.
+
+
 ## 🚀 Summary
 
 This project is being developed as part of a postgraduate engineering program in Cybersecurity Engineering (2024/2025) at Warsaw University of Technology.

@@ -61,7 +61,7 @@ class PostgresDatabaseAccessProvider implements DatabaseAccessProvider {
           String.format("GRANT USAGE ON SCHEMA public TO %s", username)
         );
 
-        String tablePrivileges = switch (request.permissionLevel()) {
+        var tablePrivileges = switch (request.permissionLevel()) {
             case READ_ONLY -> "SELECT";
             case READ_WRITE -> "SELECT, INSERT, UPDATE";
             case DELETE -> "SELECT, DELETE";
