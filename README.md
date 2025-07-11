@@ -305,12 +305,17 @@ interface DatabaseAccessProvider {
 
 ---
 
-## 🎥 Demo
+## 🎥 Demos
 
-[![Watch the demo on YouTube](https://img.youtube.com/vi/MGqyQWGKQB4/0.jpg)](https://www.youtube.com/watch?v=MGqyQWGKQB4)
+### 1. Basic usage
 
+[![Watch the demo on YouTube](https://img.youtube.com/vi/MGqyQWGKQB4/0.jpg)](https://www.youtube.com/watch?v=MGqyQWGKQB4)  
 A short demonstration of how the Safe Temporary DB Access project works.
 
+### 2. Admin panel & advanced features
+
+[![Watch the second demo on YouTube](https://img.youtube.com/vi/1yALvXWXzT0/0.jpg)](https://www.youtube.com/watch?v=1yALvXWXzT0)  
+Demo showing additional features like the admin panel and user/session management.
 
 ## 🚀 Summary
 
