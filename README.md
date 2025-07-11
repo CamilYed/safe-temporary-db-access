@@ -327,7 +327,7 @@ The CLI allows selecting a specific case to test the token validation logic unde
 
 [![Watch the second demo on YouTube](https://img.youtube.com/vi/1yALvXWXzT0/0.jpg)](https://www.youtube.com/watch?v=1yALvXWXzT0)  
 This demo shows how the service interacts with a live PostgreSQL database by dynamically creating a temporary user based on the API request.  
-Depending on the `permissionLevel` (`READ_ONLY` or `PUBLIC`), the user is created with limited access and expires after the requested `durationMinutes`.
+Depending on the `permissionLevel` (`READ_ONLY` or `READ_WRITE`, or `DELETE`), the user is created with limited access and expires after the requested `durationMinutes`.
 
 #### 📥 Request example:
 ```json
