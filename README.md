@@ -307,15 +307,46 @@ interface DatabaseAccessProvider {
 
 ## 🎥 Demos
 
-### 1. Basic usage
+### 1. Token validation scenarios (JWT)
 
 [![Watch the demo on YouTube](https://img.youtube.com/vi/MGqyQWGKQB4/0.jpg)](https://www.youtube.com/watch?v=MGqyQWGKQB4)  
-A short demonstration of how the Safe Temporary DB Access project works.
+This demo showcases how the system responds to various broken JWT tokens, including:
+- `expired`
+- `long_ttl`
+- `invalid_subject`
+- `bad_signature` (e.g. signed with RS256 instead of ES256)
+- `parse_error`
+- `null_subject`
+- `blank_subject`
 
-### 2. Admin panel & advanced features
+The CLI allows selecting a specific case to test the token validation logic under different failure conditions.
+
+---
+
+### 2. PostgreSQL integration & dynamic role-based access
 
 [![Watch the second demo on YouTube](https://img.youtube.com/vi/1yALvXWXzT0/0.jpg)](https://www.youtube.com/watch?v=1yALvXWXzT0)  
-Demo showing additional features like the admin panel and user/session management.
+This demo shows how the service interacts with a live PostgreSQL database by dynamically creating a temporary user based on the API request.  
+Depending on the `permissionLevel` (`READ_ONLY` or `PUBLIC`), the user is created with limited access and expires after the requested `durationMinutes`.
+
+#### 📥 Request example:
+```json
+{
+  "permissionLevel": "READ_ONLY",
+  "durationMinutes": 10,
+  "targetDatabase": "test1"
+}
+```
+
+#### 📤 Example response
+```json
+{
+  "targetDatabase": "test1",
+  "username": "tmp_user_abc123",
+  "password": "secure_password_xyz",
+  "expiresAt": "2025-07-11T12:00:00Z"
+}
+```
 
 ## 🚀 Summary
 
